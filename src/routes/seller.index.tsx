@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import { PushToggle } from "@/components/PushToggle";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -125,6 +126,7 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
     { to: "/seller/wallet" as const, label: "Wallet", icon: Wallet },
     { to: "/seller/reviews" as const, label: "Reviews", icon: Star },
     { to: "/seller/profile" as const, label: "Shop profile", icon: Settings },
+    { to: "/seller/captions" as const, label: "AI captions", icon: Sparkles },
   ];
   const pipeline = [
     { label: "To pack", value: toPack, tone: "bg-warning/15 text-warning-ink" },

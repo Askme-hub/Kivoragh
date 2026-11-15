@@ -7,6 +7,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductCardSkeleton, ProductGridSkeleton } from "@/components/ProductCardSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { BannerSlider } from "@/components/BannerSlider";
+import { PromoPopup } from "@/components/PromoPopup";
 import { InstallAppButton } from "@/components/InstallAppButton";
 
 import { useProducts, toProduct, type DbProduct } from "@/lib/products";
@@ -151,6 +152,7 @@ function Home() {
       <h1 className="sr-only">Kivora Ghana — shop electronics, fashion, groceries and more</h1>
 
       {/* HERO / BANNER SLIDER */}
+      <PromoPopup />
       <BannerSlider />
 
       <div className="px-4 mt-4">
