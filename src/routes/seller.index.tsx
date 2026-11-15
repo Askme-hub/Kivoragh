@@ -193,7 +193,7 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
       {/* Tools */}
       <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
         <h2 className="px-1 pb-3 text-sm font-bold">Seller tools</h2>
-        <div className="grid grid-cols-4 gap-1 sm:gap-2 lg:grid-cols-8">
+        <div className="grid grid-cols-4 gap-1 sm:gap-2 lg:grid-cols-9">
           {tools.map((t) => {
             const Icon = t.icon;
             return (
