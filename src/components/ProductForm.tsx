@@ -152,7 +152,8 @@ export function ProductForm({
   };
 
   return (
-    <form onSubmit={save} className="space-y-5">
+    <form onSubmit={save} className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-6">
+      <div className="min-w-0 space-y-5">
       {/* Step 1 — photos */}
       <section className="rounded-2xl border border-border bg-card p-4 shadow-soft">
         <StepLabel n={1} title="Add photos" hint={`Up to ${MAX_PHOTOS} — front, back, side, packaging. First photo is the cover.`} />
@@ -309,7 +310,23 @@ export function ProductForm({
         )}
       </section>
 
-      <div className="sticky bottom-20 md:bottom-4 z-10">
+      </div>
+      <aside className="sticky bottom-20 z-10 mt-5 md:bottom-4 lg:top-20 lg:mt-0 lg:space-y-3">
+        <div className="hidden overflow-hidden rounded-2xl border border-border bg-card shadow-soft lg:block">
+          <p className="border-b border-border px-4 py-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Buyer preview</p>
+          <div className="aspect-square bg-muted">
+            {images[0] ? <img src={images[0]} alt="Cover preview" className="h-full w-full object-contain" /> : <div className="grid h-full place-items-center text-xs text-muted-foreground">Your cover photo shows here</div>}
+          </div>
+          <div className="space-y-1 p-4">
+            <p className="line-clamp-2 text-sm font-semibold">{name.trim() || "Product name"}</p>
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-lg font-bold">{formatGHC(Number(price) || 0)}</span>
+              {discount && <span className="text-xs text-muted-foreground line-through">{formatGHC(Number(oldPrice))}</span>}
+              {discount && <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-bold text-primary">-{discount}%</span>}
+            </div>
+            <p className="text-xs text-muted-foreground">{category || "No category"} · {Number(stock) > 0 ? `${stock} in stock` : "Out of stock"}</p>
+          </div>
+        </div>
         <button
           disabled={busy || uploading}
           className="w-full rounded-xl bg-primary py-3.5 font-bold text-primary-foreground shadow-lg disabled:opacity-60"
@@ -325,7 +342,7 @@ export function ProductForm({
             Your product goes live once an admin approves it.
           </p>
         )}
-      </div>
+      </aside>
     </form>
   );
 }

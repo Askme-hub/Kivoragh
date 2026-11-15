@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSellerProfile } from "@/hooks/use-seller";
 import { SellerVerification } from "@/components/SellerVerification";
 import { ShopCardStudio } from "@/components/ShopCardStudio";
+import { canvasToBlob, renderShopCover, renderShopLogo } from "@/lib/shop-card";
 
 export const Route = createFileRoute("/seller/profile")({ component: SellerProfilePage });
 
@@ -73,6 +74,14 @@ function SellerProfilePage() {
   };
 
 
+  const autoDesign = async (kind: "logo" | "banner") => {
+    if (!shop.trim()) return toast.error("Enter your shop name first");
+    const details = { shop_name: shop.trim(), slug: "", location, business_category: bizCat };
+    const canvas = kind === "logo" ? await renderShopLogo(details) : await renderShopCover(details);
+    const blob = await canvasToBlob(canvas);
+    await upload(new File([blob], `${kind}.png`, { type: "image/png" }), kind);
+  };
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pickupEnabled && !pickupStation.trim()) {
@@ -109,7 +118,7 @@ function SellerProfilePage() {
   const inputCls = "w-full border-2 border-border rounded-md px-4 py-3 bg-background text-foreground outline-none focus:border-primary";
 
   return (
-    <form onSubmit={save} className="p-4 max-w-md mx-auto space-y-3">
+    <form onSubmit={save} className="p-4 max-w-2xl mx-auto space-y-3 md:p-6">
       <h2 className="text-xl font-bold text-foreground">Shop Details</h2>
       <p className="text-xs text-muted-foreground">Status: <span className="font-bold uppercase">{profile.status}</span></p>
 
@@ -187,6 +196,9 @@ function SellerProfilePage() {
             onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f, "logo"); }}
             className="w-full text-xs text-muted-foreground"
           />
+          <button type="button" disabled={uploading !== null} onClick={() => void autoDesign("logo")} className="mt-2 w-full rounded-full border border-primary px-3 py-1.5 text-xs font-bold text-primary disabled:opacity-60">
+            {uploading === "logo" ? "Working…" : "Design a logo for me"}
+          </button>
         </div>
         <div>
           <label className="mb-1 block text-xs font-semibold text-muted-foreground">Cover image</label>
@@ -196,6 +208,9 @@ function SellerProfilePage() {
             onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f, "banner"); }}
             className="w-full text-xs text-muted-foreground"
           />
+          <button type="button" disabled={uploading !== null} onClick={() => void autoDesign("banner")} className="mt-2 w-full rounded-full border border-primary px-3 py-1.5 text-xs font-bold text-primary disabled:opacity-60">
+            {uploading === "banner" ? "Working…" : "Design a cover for me"}
+          </button>
         </div>
       </div>
       {uploading && <p className="text-xs text-muted-foreground">Uploading {uploading}…</p>}

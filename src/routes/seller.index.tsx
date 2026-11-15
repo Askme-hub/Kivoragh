@@ -129,7 +129,7 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
   ];
 
   return (
-    <div className="dashboard-canvas space-y-5 p-4 pb-8 md:p-6">
+    <div className="dashboard-canvas mx-auto max-w-6xl space-y-5 p-4 pb-8 md:p-6 lg:p-8">
       {/* Shop hero */}
       <section className="relative overflow-hidden rounded-3xl bg-primary p-5 text-primary-foreground shadow-md md:p-6">
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary-foreground/10" />
@@ -144,7 +144,7 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
           </div>
           <PushToggle compact />
         </div>
-        <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-3">
           <div className="rounded-2xl bg-primary-foreground/15 p-3">
             <p className="text-[11px] opacity-80">Balance</p>
             <p className="truncate font-display text-lg font-bold">{formatGHC(Number(wallet?.balance ?? 0))}</p>
@@ -208,6 +208,8 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
         })}
       </div>
 
+      <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+      <div className="space-y-5">
       {/* Wallet strip */}
       <Link
         to="/seller/wallet"
@@ -292,6 +294,7 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
         </section>
       )}
 
+      </div>
       {/* Recent orders */}
       <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -331,6 +334,8 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
           )}
         </div>
       </section>
+
+      </div>
 
       {/* Secondary shortcuts */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
