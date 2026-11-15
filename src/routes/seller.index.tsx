@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Package, Clock, CheckCircle2, Store, MessageCircle, ShoppingBag, Wallet, Plus, AlertTriangle, ChevronRight } from "lucide-react";
+import { Package, Clock, CheckCircle2, Store, MessageCircle, ShoppingBag, Wallet, Plus, AlertTriangle, ChevronRight, Share2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsSeller, useSellerProfile } from "@/hooks/use-seller";
@@ -74,12 +74,12 @@ function SellerDashboard() {
           />
         </div>
       )}
-      <Overview userId={user.id} shopName={profile?.shop_name ?? "Your shop"} />
+      <Overview userId={user.id} shopName={profile?.shop_name ?? "Your shop"} slug={(profile as any)?.slug ?? null} />
     </div>
   );
 }
 
-function Overview({ userId, shopName }: { userId: string; shopName: string }) {
+function Overview({ userId, shopName, slug }: { userId: string; shopName: string; slug: string | null }) {
   const fetchOrders = useServerFn(getSellerOrders);
   const { data: products } = useQuery({
     queryKey: ["seller-products-summary", userId],
@@ -130,16 +130,49 @@ function Overview({ userId, shopName }: { userId: string; shopName: string }) {
 
   return (
     <div className="dashboard-canvas space-y-5 p-4 pb-8 md:p-6">
-      {/* Header */}
-      <div className="flex items-end justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">Seller hub</p>
-          <h1 className="mt-0.5 truncate font-display text-2xl font-bold tracking-tight md:text-3xl">
-            {shopName}
-          </h1>
+      {/* Shop hero */}
+      <section className="relative overflow-hidden rounded-3xl bg-primary p-5 text-primary-foreground shadow-md md:p-6">
+        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary-foreground/10" />
+        <div className="pointer-events-none absolute -bottom-12 right-16 h-28 w-28 rounded-full bg-primary-foreground/10" />
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wider opacity-80">Seller hub</p>
+            <h1 className="mt-0.5 truncate font-display text-2xl font-bold tracking-tight md:text-3xl">{shopName}</h1>
+            <p className="mt-1 text-xs opacity-85">
+              {openOrders.length ? `${openOrders.length} order${openOrders.length === 1 ? "" : "s"} waiting for you` : "All caught up — great work!"}
+            </p>
+          </div>
+          <PushToggle compact />
         </div>
-        <PushToggle compact />
-      </div>
+        <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="rounded-2xl bg-primary-foreground/15 p-3">
+            <p className="text-[11px] opacity-80">Balance</p>
+            <p className="truncate font-display text-lg font-bold">{formatGHC(Number(wallet?.balance ?? 0))}</p>
+          </div>
+          <div className="rounded-2xl bg-primary-foreground/15 p-3">
+            <p className="text-[11px] opacity-80">Sales (30d)</p>
+            <p className="truncate font-display text-lg font-bold">{formatGHC(analytics?.totalRevenue ?? 0)}</p>
+          </div>
+          <div className="rounded-2xl bg-primary-foreground/15 p-3">
+            <p className="text-[11px] opacity-80">Orders (30d)</p>
+            <p className="font-display text-lg font-bold">{analytics?.totalOrders ?? 0}</p>
+          </div>
+          <div className="rounded-2xl bg-primary-foreground/15 p-3">
+            <p className="text-[11px] opacity-80">Live products</p>
+            <p className="font-display text-lg font-bold">{approved}</p>
+          </div>
+        </div>
+        {slug && (
+          <div className="relative mt-4 flex flex-wrap gap-2">
+            <Button asChild size="sm" variant="secondary">
+              <a href={`https://wa.me/?text=${encodeURIComponent(`Shop ${shopName} on Kivora 🛍️ https://kivoragh.shop/shop/${slug}`)}`} target="_blank" rel="noreferrer"><Share2 /> Share on WhatsApp</a>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
+              <Link to="/shop/$slug" params={{ slug }}><ExternalLink /> View my shop</Link>
+            </Button>
+          </div>
+        )}
+      </section>
 
       {/* Primary actions — large touch targets */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -258,24 +291,6 @@ function Overview({ userId, shopName }: { userId: string; shopName: string }) {
           </div>
         </section>
       )}
-
-      {/* Snapshot numbers */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <div className="rounded-2xl border border-border bg-card p-3 text-center sm:p-4">
-          <p className="font-display text-lg font-bold sm:text-xl">{approved}</p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">Live products</p>
-        </div>
-        <div className="rounded-2xl border border-border bg-card p-3 text-center sm:p-4">
-          <p className="font-display text-lg font-bold sm:text-xl">{analytics?.totalOrders ?? 0}</p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">Orders (30d)</p>
-        </div>
-        <div className="rounded-2xl border border-border bg-card p-3 text-center sm:p-4">
-          <p className="truncate font-display text-lg font-bold sm:text-xl">
-            {formatGHC(analytics?.totalRevenue ?? 0)}
-          </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">Sales (30d)</p>
-        </div>
-      </div>
 
       {/* Recent orders */}
       <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
