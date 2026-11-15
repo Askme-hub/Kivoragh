@@ -64,6 +64,7 @@ import { Route as ApiPublicPaystackWebhookRouteImport } from './routes/api/publi
 import { Route as OrdersStatusIdRouteImport } from './routes/orders.status.$id'
 import { Route as SellerOrdersIndexRouteImport } from './routes/seller.orders.index'
 import { Route as SellerOrdersIdRouteImport } from './routes/seller.orders.$id'
+import { Route as SellerPosIndexRouteImport } from './routes/seller.pos.index'
 import { Route as SellerProductsIndexRouteImport } from './routes/seller.products.index'
 import { Route as SellerProductsIdRouteImport } from './routes/seller.products.$id'
 import { Route as SellerProductsNewRouteImport } from './routes/seller.products.new'
@@ -347,6 +348,11 @@ const SellerOrdersIdRoute = SellerOrdersIdRouteImport.update({
   path: '/orders/$id',
   getParentRoute: () => SellerRoute,
 } as any)
+const SellerPosIndexRoute = SellerPosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SellerPosRoute,
+} as any)
 const SellerProductsIndexRoute = SellerProductsIndexRouteImport.update({
   id: '/products/',
   path: '/products/',
@@ -420,7 +426,7 @@ export interface FileRoutesByFullPath {
   '/products/$id': typeof ProductsIdRoute
   '/seller/coupons': typeof SellerCouponsRoute
   '/seller/messages': typeof SellerMessagesRoute
-  '/seller/pos': typeof SellerPosRoute
+  '/seller/pos': typeof SellerPosRouteWithChildren
   '/seller/profile': typeof SellerProfileRoute
   '/seller/reviews': typeof SellerReviewsRoute
   '/seller/subscription': typeof SellerSubscriptionRoute
@@ -436,6 +442,7 @@ export interface FileRoutesByFullPath {
   '/seller/products/$id': typeof SellerProductsIdRoute
   '/seller/products/new': typeof SellerProductsNewRoute
   '/seller/orders/': typeof SellerOrdersIndexRoute
+  '/seller/pos/': typeof SellerPosIndexRoute
   '/seller/products/': typeof SellerProductsIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -480,7 +487,6 @@ export interface FileRoutesByTo {
   '/products/$id': typeof ProductsIdRoute
   '/seller/coupons': typeof SellerCouponsRoute
   '/seller/messages': typeof SellerMessagesRoute
-  '/seller/pos': typeof SellerPosRoute
   '/seller/profile': typeof SellerProfileRoute
   '/seller/reviews': typeof SellerReviewsRoute
   '/seller/subscription': typeof SellerSubscriptionRoute
@@ -496,6 +502,7 @@ export interface FileRoutesByTo {
   '/seller/products/$id': typeof SellerProductsIdRoute
   '/seller/products/new': typeof SellerProductsNewRoute
   '/seller/orders': typeof SellerOrdersIndexRoute
+  '/seller/pos': typeof SellerPosIndexRoute
   '/seller/products': typeof SellerProductsIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -544,7 +551,7 @@ export interface FileRoutesById {
   '/products/$id': typeof ProductsIdRoute
   '/seller/coupons': typeof SellerCouponsRoute
   '/seller/messages': typeof SellerMessagesRoute
-  '/seller/pos': typeof SellerPosRoute
+  '/seller/pos': typeof SellerPosRouteWithChildren
   '/seller/profile': typeof SellerProfileRoute
   '/seller/reviews': typeof SellerReviewsRoute
   '/seller/subscription': typeof SellerSubscriptionRoute
@@ -560,6 +567,7 @@ export interface FileRoutesById {
   '/seller/products/$id': typeof SellerProductsIdRoute
   '/seller/products/new': typeof SellerProductsNewRoute
   '/seller/orders/': typeof SellerOrdersIndexRoute
+  '/seller/pos/': typeof SellerPosIndexRoute
   '/seller/products/': typeof SellerProductsIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -625,6 +633,7 @@ export interface FileRouteTypes {
     | '/seller/products/$id'
     | '/seller/products/new'
     | '/seller/orders/'
+    | '/seller/pos/'
     | '/seller/products/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -669,7 +678,6 @@ export interface FileRouteTypes {
     | '/products/$id'
     | '/seller/coupons'
     | '/seller/messages'
-    | '/seller/pos'
     | '/seller/profile'
     | '/seller/reviews'
     | '/seller/subscription'
@@ -685,6 +693,7 @@ export interface FileRouteTypes {
     | '/seller/products/$id'
     | '/seller/products/new'
     | '/seller/orders'
+    | '/seller/pos'
     | '/seller/products'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -748,6 +757,7 @@ export interface FileRouteTypes {
     | '/seller/products/$id'
     | '/seller/products/new'
     | '/seller/orders/'
+    | '/seller/pos/'
     | '/seller/products/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -1174,6 +1184,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SellerOrdersIdRouteImport
       parentRoute: typeof SellerRoute
     }
+    '/seller/pos/': {
+      id: '/seller/pos/'
+      path: '/'
+      fullPath: '/seller/pos/'
+      preLoaderRoute: typeof SellerPosIndexRouteImport
+      parentRoute: typeof SellerPosRoute
+    }
     '/seller/products/': {
       id: '/seller/products/'
       path: '/products'
@@ -1270,10 +1287,22 @@ const OrdersRouteChildren: OrdersRouteChildren = {
 const OrdersRouteWithChildren =
   OrdersRoute._addFileChildren(OrdersRouteChildren)
 
+interface SellerPosRouteChildren {
+  SellerPosIndexRoute: typeof SellerPosIndexRoute
+}
+
+const SellerPosRouteChildren: SellerPosRouteChildren = {
+  SellerPosIndexRoute: SellerPosIndexRoute,
+}
+
+const SellerPosRouteWithChildren = SellerPosRoute._addFileChildren(
+  SellerPosRouteChildren,
+)
+
 interface SellerRouteChildren {
   SellerCouponsRoute: typeof SellerCouponsRoute
   SellerMessagesRoute: typeof SellerMessagesRoute
-  SellerPosRoute: typeof SellerPosRoute
+  SellerPosRoute: typeof SellerPosRouteWithChildren
   SellerProfileRoute: typeof SellerProfileRoute
   SellerReviewsRoute: typeof SellerReviewsRoute
   SellerSubscriptionRoute: typeof SellerSubscriptionRoute
@@ -1290,7 +1319,7 @@ interface SellerRouteChildren {
 const SellerRouteChildren: SellerRouteChildren = {
   SellerCouponsRoute: SellerCouponsRoute,
   SellerMessagesRoute: SellerMessagesRoute,
-  SellerPosRoute: SellerPosRoute,
+  SellerPosRoute: SellerPosRouteWithChildren,
   SellerProfileRoute: SellerProfileRoute,
   SellerReviewsRoute: SellerReviewsRoute,
   SellerSubscriptionRoute: SellerSubscriptionRoute,
