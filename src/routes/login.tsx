@@ -5,6 +5,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
+import { phoneLogin, phoneSignup } from "@/lib/phone-auth.functions";
 import kivoraLogo from "@/assets/kivora-logo.png";
 
 export const Route = createFileRoute("/login")({
@@ -12,7 +13,7 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Sign in or create an account — Kivora Ghana" },
-      { name: "description", content: "Log in or sign up to Kivora with email, Google or Apple." },
+      { name: "description", content: "Log in or sign up to Kivora with your phone number, email, Google or Apple." },
       { property: "og:title", content: "Sign in to Kivora Ghana" },
       { property: "og:description", content: "Shop and sell across Ghana on Kivora." },
       { property: "og:type", content: "website" },
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/login")({
 
 const signupSchema = z.object({
   name: z.string().trim().min(2, "Enter your full name").max(80),
-  email: z.string().trim().email("Enter a valid email").max(255),
+  email: z.union([z.literal(""), z.string().trim().email("Enter a valid email").max(255)]),
   phone: z.string().trim().regex(/^(\+?233|0)?[235]\d{8}$/, "Enter a valid Ghana phone number (e.g. 024 123 4567)"),
   password: z.string().min(8, "Password must be at least 8 characters").max(72),
 });
@@ -51,6 +52,13 @@ function Login() {
         const parsed = signupSchema.safeParse({ name, email, phone: phone.replace(/\s/g, ""), password });
         if (!parsed.success) throw new Error(parsed.error.issues[0].message);
         if (!agree) throw new Error("Please accept the Terms & Conditions");
+        if (!parsed.data.email) {
+          const t = await phoneSignup({ data: { name: parsed.data.name, phone: parsed.data.phone, password } });
+          await supabase.auth.setSession(t);
+          toast.success("Welcome to Kivora!");
+          router.navigate({ to: "/" });
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({
           email: parsed.data.email,
           password,
@@ -66,8 +74,15 @@ function Login() {
         }
         toast.success("Welcome to Kivora!");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        const id = email.trim();
+        if (id.includes("@")) {
+          const { error } = await supabase.auth.signInWithPassword({ email: id, password });
+          if (error) throw error;
+        } else {
+          const t = await phoneLogin({ data: { phone: id.replace(/\s/g, ""), password } });
+          const { error } = await supabase.auth.setSession(t);
+          if (error) throw error;
+        }
         toast.success("Signed in");
       }
       router.navigate({ to: "/" });
@@ -125,7 +140,7 @@ function Login() {
 
       <div className="my-4 flex items-center gap-2">
         <div className="flex-1 h-px bg-border" />
-        <span className="text-xs text-muted-foreground">OR USE EMAIL</span>
+        <span className="text-xs text-muted-foreground">OR USE PHONE / EMAIL</span>
         <div className="flex-1 h-px bg-border" />
       </div>
 
@@ -136,7 +151,11 @@ function Login() {
             <input required type="tel" inputMode="tel" autoComplete="tel" placeholder="Phone number (e.g. 024 123 4567)" value={phone} onChange={(e) => setPhone(e.target.value)} className={field} />
           </>
         )}
-        <input type="email" required autoComplete="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className={field} />
+        {mode === "login" ? (
+          <input type="text" required autoComplete="username" placeholder="Phone number or email" value={email} onChange={(e) => setEmail(e.target.value)} className={field} />
+        ) : (
+          <input type="email" autoComplete="email" placeholder="Email (optional)" value={email} onChange={(e) => setEmail(e.target.value)} className={field} />
+        )}
         <div className="relative">
           <input
             type={show ? "text" : "password"}
@@ -171,7 +190,7 @@ function Login() {
           {loading ? "..." : mode === "login" ? "LOG IN" : "CREATE ACCOUNT"}
         </button>
         {mode === "signup" && (
-          <p className="text-center text-xs text-muted-foreground">We'll confirm your email, then verify your phone with a 6-digit SMS code.</p>
+          <p className="text-center text-xs text-muted-foreground">No email? No problem — sign up with just your phone number and password.</p>
         )}
       </form>
 

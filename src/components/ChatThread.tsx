@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, CheckCheck, SendHorizonal, X, Store, User, ChevronDown } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, SendHorizonal, X, Store, User, ChevronDown, Reply } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
@@ -257,6 +257,17 @@ export function ChatThread({
   );
 
   const [text, setText] = useState("");
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [flashId, setFlashId] = useState<string | null>(null);
+  const byId = useMemo(() => new Map((messages ?? []).map((m) => [m.id, m])), [messages]);
+  const jumpTo = (id: string) => {
+    const el = document.getElementById(`msg-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setFlashId(id);
+    setTimeout(() => setFlashId(null), 1500);
+  };
+  const nameOf = (m: ChatMessage) => (m.sender_id === userId ? "You" : conversation.other_name || "Them");
   const [profileOpen, setProfileOpen] = useState(false);
   const [shopSlug, setShopSlug] = useState<string | null>(null);
   const [showJump, setShowJump] = useState(false);
@@ -370,10 +381,11 @@ export function ChatThread({
     if (!text.trim() || send.isPending) return;
     notifyStoppedTyping();
     send.mutate(
-      { body: text, senderId: userId },
+      { body: text, senderId: userId, replyToId: replyTo?.id ?? null },
       {
         onSuccess: () => {
           setText("");
+          setReplyTo(null);
           if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
           }
@@ -510,8 +522,10 @@ export function ChatThread({
                 return (
                   <div
                     key={m.id}
+                    id={`msg-${m.id}`}
                     className={cn(
-                      "flex",
+                      "group flex items-center gap-1 rounded-lg transition-colors",
+                      flashId === m.id && "bg-primary/15",
                       mine ? "justify-end" : "justify-start",
                       sameAsPrev ? "mt-0.5" : "mt-1.5",
                     )}
@@ -531,6 +545,22 @@ export function ChatThread({
                             : "rounded-2xl rounded-bl-sm",
                       )}
                     >
+                      {m.reply_to_id && (() => {
+                        const q = byId.get(m.reply_to_id);
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => q && jumpTo(q.id)}
+                            className={cn(
+                              "mb-1 block w-full rounded-md border-l-4 px-2 py-1 text-left text-xs",
+                              mine ? "border-primary-foreground/70 bg-primary-foreground/15" : "border-primary bg-muted",
+                            )}
+                          >
+                            <span className="block font-bold">{q ? nameOf(q) : "Message"}</span>
+                            <span className="line-clamp-2 opacity-80">{q ? q.body : "Original message unavailable"}</span>
+                          </button>
+                        );
+                      })()}
                       <p className="whitespace-pre-wrap break-words">{m.body}</p>
                       <div
                         className={cn(
@@ -553,6 +583,17 @@ export function ChatThread({
                         )}
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => { setReplyTo(m); textareaRef.current?.focus(); }}
+                      aria-label="Reply to this message"
+                      className={cn(
+                        "shrink-0 rounded-full p-1.5 text-muted-foreground opacity-60 hover:bg-muted hover:opacity-100 md:opacity-0 md:group-hover:opacity-100",
+                        mine && "order-first",
+                      )}
+                    >
+                      <Reply size={16} />
+                    </button>
                   </div>
                 );
               })}
@@ -592,6 +633,17 @@ export function ChatThread({
             : "max(0.5rem, env(safe-area-inset-bottom))",
         }}
       >
+        {replyTo && (
+          <div className="mx-auto mb-2 flex max-w-3xl items-start gap-2 rounded-lg border-l-4 border-primary bg-muted px-3 py-2">
+            <div className="min-w-0 flex-1 text-xs">
+              <p className="font-bold text-primary">Replying to {nameOf(replyTo)}</p>
+              <p className="truncate text-muted-foreground">{replyTo.body}</p>
+            </div>
+            <button type="button" onClick={() => setReplyTo(null)} aria-label="Cancel reply" className="rounded-full p-1 text-muted-foreground hover:bg-background">
+              <X size={16} />
+            </button>
+          </div>
+        )}
         <div className="mx-auto flex max-w-3xl items-end gap-2">
           <textarea
             ref={textareaRef}
