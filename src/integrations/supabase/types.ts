@@ -787,6 +787,7 @@ export type Database = {
       products: {
         Row: {
           approval_status: string
+          barcode: string | null
           category: string | null
           created_at: string
           description: string | null
@@ -802,6 +803,7 @@ export type Database = {
         }
         Insert: {
           approval_status?: string
+          barcode?: string | null
           category?: string | null
           created_at?: string
           description?: string | null
@@ -817,6 +819,7 @@ export type Database = {
         }
         Update: {
           approval_status?: string
+          barcode?: string | null
           category?: string | null
           created_at?: string
           description?: string | null
