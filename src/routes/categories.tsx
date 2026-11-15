@@ -6,6 +6,7 @@ import { ProductCardSkeleton } from "@/components/ProductCardSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { useCategories } from "@/lib/categories";
 import { useProducts } from "@/lib/products";
+import { trackProductView } from "@/lib/popup-campaigns";
 
 export const Route = createFileRoute("/categories")({
   component: Categories,
@@ -34,6 +35,7 @@ function Categories() {
   const { data: categories = [], isLoading } = useCategories();
   const navigate = Route.useNavigate();
   const { c } = Route.useSearch();
+  useEffect(() => { if (c) trackProductView(c); }, [c]);
   const [fallback, setFallback] = useState<string>("");
   const active = c ?? fallback;
 

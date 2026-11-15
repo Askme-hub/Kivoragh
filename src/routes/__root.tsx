@@ -18,6 +18,7 @@ import { SearchOverlay } from "@/components/SearchOverlay";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useLiveStock } from "@/lib/products";
 import { Toaster } from "@/components/ui/sonner";
+import { PromoPopup } from "@/components/PromoPopup";
 import { themeInitScript } from "@/lib/theme";
 import { registerServiceWorker } from "@/lib/register-sw";
 import { useEffect } from "react";
@@ -177,6 +178,7 @@ function RootComponent() {
       <InstalledNotificationPrompt />
       <CompleteAccountPrompt />
       <Toaster position="top-center" />
+      <PromoPopup />
     </QueryClientProvider>
   );
 }

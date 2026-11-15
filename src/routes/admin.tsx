@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { Package, ShoppingBag, Mail, Store, ArrowDownToLine, LayoutGrid, Image as ImageIcon, Gauge, Wallet, TicketPercent, Zap , Crown, LifeBuoy, Truck } from "lucide-react";
+import { Package, ShoppingBag, Mail, Store, ArrowDownToLine, LayoutGrid, Image as ImageIcon, Gauge, Wallet, TicketPercent, Zap , Crown, LifeBuoy, Truck, MessageSquareDot } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { WorkspaceShell, type WorkspaceItem } from "@/components/WorkspaceShell";
 
@@ -58,6 +58,7 @@ function AdminLayout() {
     { to: "/admin/delivery" as const, label: "Delivery Fees", icon: Truck, group: "Money" },
     { to: "/admin/coupons" as const, label: "Coupons", icon: TicketPercent, group: "Marketing" },
     { to: "/admin/flash-sales" as const, label: "Flash Sales", icon: Zap, group: "Marketing" },
+    { to: "/admin/popups" as const, label: "Pop-ups", icon: MessageSquareDot, group: "Marketing" },
   ];
 
   return (
