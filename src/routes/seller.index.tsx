@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Package, Clock, CheckCircle2, Store, MessageCircle, ShoppingBag, Wallet, Plus, AlertTriangle, ChevronRight, Share2, ExternalLink } from "lucide-react";
+import { Package, Clock, CheckCircle2, Store, MessageCircle, ShoppingBag, Wallet, Plus, AlertTriangle, ChevronRight, Share2, ExternalLink, TrendingUp, Star, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsSeller, useSellerProfile } from "@/hooks/use-seller";
@@ -84,279 +84,192 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
   const { data: products } = useQuery({
     queryKey: ["seller-products-summary", userId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("products")
-        .select("id, name, price, approval_status, stock")
-        .eq("seller_id", userId);
+      const { data } = await supabase.from("products").select("id, name, price, approval_status, stock").eq("seller_id", userId);
       return data ?? [];
     },
   });
   const { data: wallet } = useQuery({
     queryKey: ["seller-dashboard-wallet", userId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("seller_wallets")
-        .select("balance, pending, total_earned")
-        .eq("user_id", userId)
-        .maybeSingle();
+      const { data } = await supabase.from("seller_wallets").select("balance, pending, total_earned").eq("user_id", userId).maybeSingle();
       return data;
     },
   });
-  const { data: orders = [] } = useQuery({
-    queryKey: ["seller-dashboard-orders", userId],
-    queryFn: () => fetchOrders(),
-  });
+  const { data: orders = [] } = useQuery({ queryKey: ["seller-dashboard-orders", userId], queryFn: () => fetchOrders() });
   const fetchAnalytics = useServerFn(getSellerAnalytics);
-  const { data: analytics } = useQuery({
-    queryKey: ["seller-analytics", userId],
-    queryFn: () => fetchAnalytics(),
-  });
+  const { data: analytics } = useQuery({ queryKey: ["seller-analytics", userId], queryFn: () => fetchAnalytics() });
 
   const approved = products?.filter((p) => p.approval_status === "approved").length ?? 0;
   const pendingProducts = products?.filter((p) => p.approval_status === "pending").length ?? 0;
   const lowStock = products?.filter((p) => p.approval_status === "approved" && (p.stock ?? 0) <= 3) ?? [];
-  const openOrders = orders.filter((o) =>
-    ["placed", "pending", "processing", "confirmed"].includes(String(o.status).toLowerCase())
-    || o.items?.some((i: any) => ["pending", "processing"].includes(String(i.fulfillment_status).toLowerCase()))
-  );
-  const recentOrders = orders.slice(0, 5);
+  const st = (o: any) => String(o.status).toLowerCase();
+  const toPack = orders.filter((o) => ["placed", "pending", "processing", "confirmed"].includes(st(o))).length;
+  const onTheWay = orders.filter((o) => ["shipped", "out_for_delivery", "in_transit"].includes(st(o))).length;
+  const delivered = orders.filter((o) => ["delivered", "completed"].includes(st(o))).length;
+  const recentOrders = orders.slice(0, 6);
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  const actions = [
-    { to: "/seller/orders" as const, label: "Orders", hint: openOrders.length ? `${openOrders.length} open` : "Manage", icon: ShoppingBag, tone: "primary" },
-    { to: "/seller/products/new" as const, label: "Add product", hint: "List new item", icon: Plus, tone: "default" },
-    { to: "/seller/wallet" as const, label: "Wallet", hint: formatGHC(Number(wallet?.balance ?? 0)), icon: Wallet, tone: "default" },
-    { to: "/seller/messages" as const, label: "Messages", hint: "Chat buyers", icon: MessageCircle, tone: "default" },
+  const kpis = [
+    { label: "Sales · 30 days", value: formatGHC(analytics?.totalRevenue ?? 0), icon: TrendingUp },
+    { label: "Orders · 30 days", value: String(analytics?.totalOrders ?? 0), icon: ShoppingBag },
+    { label: "Live products", value: String(approved), icon: Package },
+    { label: "Pending payout", value: formatGHC(Number(wallet?.pending ?? 0)), icon: Clock },
   ];
+  const tools = [
+    { to: "/seller/products/new" as const, label: "Add product", icon: Plus },
+    { to: "/seller/orders" as const, label: "Orders", icon: ShoppingBag },
+    { to: "/seller/products" as const, label: "Products", icon: Package },
+    { to: "/seller/pos" as const, label: "POS", icon: Store },
+    { to: "/seller/messages" as const, label: "Messages", icon: MessageCircle },
+    { to: "/seller/wallet" as const, label: "Wallet", icon: Wallet },
+    { to: "/seller/reviews" as const, label: "Reviews", icon: Star },
+    { to: "/seller/profile" as const, label: "Shop profile", icon: Settings },
+  ];
+  const pipeline = [
+    { label: "To pack", value: toPack, tone: "bg-warning/15 text-warning-ink" },
+    { label: "On the way", value: onTheWay, tone: "bg-primary/10 text-primary" },
+    { label: "Delivered", value: delivered, tone: "bg-success/15 text-success" },
+  ];
+  const tasks = [
+    toPack > 0 && { to: "/seller/orders" as const, title: `${toPack} order${toPack === 1 ? "" : "s"} to pack`, hint: "Buyers are waiting — ship today", icon: ShoppingBag, warn: true },
+    lowStock.length > 0 && { to: "/seller/products" as const, title: `${lowStock.length} item${lowStock.length === 1 ? "" : "s"} running low`, hint: lowStock.slice(0, 2).map((p) => p.name).join(", "), icon: AlertTriangle, warn: true },
+    pendingProducts > 0 && { to: "/seller/products" as const, title: `${pendingProducts} product${pendingProducts === 1 ? "" : "s"} in review`, hint: "Admin is checking them", icon: Clock, warn: false },
+    approved === 0 && { to: "/seller/products/new" as const, title: "List your first product", hint: "Shops with 5+ products sell more", icon: Plus, warn: false },
+  ].filter(Boolean) as { to: any; title: string; hint: string; icon: any; warn: boolean }[];
 
   return (
-    <div className="dashboard-canvas mx-auto max-w-6xl space-y-5 p-4 pb-8 md:p-6 lg:p-8">
-      {/* Shop hero */}
-      <section className="relative overflow-hidden rounded-3xl bg-primary p-5 text-primary-foreground shadow-md md:p-6">
-        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary-foreground/10" />
-        <div className="pointer-events-none absolute -bottom-12 right-16 h-28 w-28 rounded-full bg-primary-foreground/10" />
-        <div className="relative flex items-start justify-between gap-3">
+    <div className="dashboard-canvas mx-auto max-w-7xl space-y-5 p-3 pb-10 sm:p-4 md:p-6 lg:p-8">
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-primary/80 p-5 text-primary-foreground shadow-lg md:p-7">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary-foreground/10" />
+        <div className="pointer-events-none absolute -bottom-20 right-24 h-40 w-40 rounded-full bg-primary-foreground/10" />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wider opacity-80">Seller hub</p>
-            <h1 className="mt-0.5 truncate font-display text-2xl font-bold tracking-tight md:text-3xl">{shopName}</h1>
-            <p className="mt-1 text-xs opacity-85">
-              {openOrders.length ? `${openOrders.length} order${openOrders.length === 1 ? "" : "s"} waiting for you` : "All caught up — great work!"}
-            </p>
+            <p className="text-xs font-semibold opacity-85">{greeting} 👋</p>
+            <h1 className="mt-1 truncate font-display text-2xl font-extrabold tracking-tight md:text-4xl">{shopName}</h1>
+            <p className="mt-1.5 text-sm opacity-90">Here's how your shop is doing today.</p>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Button asChild size="sm" variant="secondary">
+                <Link to="/seller/products/new"><Plus /> Add product</Link>
+              </Button>
+              {slug && (
+                <>
+                  <Button asChild size="sm" variant="outline" className="border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
+                    <a href={`https://wa.me/?text=${encodeURIComponent(`Shop ${shopName} on Kivora 🛍️ https://kivoragh.shop/shop/${slug}`)}`} target="_blank" rel="noreferrer"><Share2 /> Share</a>
+                  </Button>
+                  <Button asChild size="sm" variant="outline" className="border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
+                    <Link to="/shop/$slug" params={{ slug }}><ExternalLink /> View shop</Link>
+                  </Button>
+                </>
+              )}
+              <PushToggle />
+            </div>
           </div>
-          <PushToggle compact />
+          <Link to="/seller/wallet" className="group shrink-0 rounded-2xl bg-primary-foreground/15 p-4 backdrop-blur transition hover:bg-primary-foreground/20 lg:min-w-64">
+            <p className="flex items-center gap-1.5 text-xs font-semibold opacity-85"><Wallet className="h-3.5 w-3.5" /> Available balance</p>
+            <p className="mt-1 font-display text-3xl font-extrabold tracking-tight">{formatGHC(Number(wallet?.balance ?? 0))}</p>
+            <p className="mt-1 flex items-center gap-1 text-xs font-bold">Withdraw to MoMo <ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" /></p>
+          </Link>
         </div>
-        <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-3">
-          <div className="rounded-2xl bg-primary-foreground/15 p-3">
-            <p className="text-[11px] opacity-80">Balance</p>
-            <p className="truncate font-display text-lg font-bold">{formatGHC(Number(wallet?.balance ?? 0))}</p>
-          </div>
-          <div className="rounded-2xl bg-primary-foreground/15 p-3">
-            <p className="text-[11px] opacity-80">Sales (30d)</p>
-            <p className="truncate font-display text-lg font-bold">{formatGHC(analytics?.totalRevenue ?? 0)}</p>
-          </div>
-          <div className="rounded-2xl bg-primary-foreground/15 p-3">
-            <p className="text-[11px] opacity-80">Orders (30d)</p>
-            <p className="font-display text-lg font-bold">{analytics?.totalOrders ?? 0}</p>
-          </div>
-          <div className="rounded-2xl bg-primary-foreground/15 p-3">
-            <p className="text-[11px] opacity-80">Live products</p>
-            <p className="font-display text-lg font-bold">{approved}</p>
-          </div>
-        </div>
-        {slug && (
-          <div className="relative mt-4 flex flex-wrap gap-2">
-            <Button asChild size="sm" variant="secondary">
-              <a href={`https://wa.me/?text=${encodeURIComponent(`Shop ${shopName} on Kivora 🛍️ https://kivoragh.shop/shop/${slug}`)}`} target="_blank" rel="noreferrer"><Share2 /> Share on WhatsApp</a>
-            </Button>
-            <Button asChild size="sm" variant="outline" className="border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
-              <Link to="/shop/$slug" params={{ slug }}><ExternalLink /> View my shop</Link>
-            </Button>
-          </div>
-        )}
       </section>
 
-      {/* Primary actions — large touch targets */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {actions.map((a) => {
-          const Icon = a.icon;
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {kpis.map((k) => {
+          const Icon = k.icon;
           return (
-            <Link
-              key={a.to}
-              to={a.to}
-              className={
-                a.tone === "primary"
-                  ? "flex flex-col items-start gap-3 rounded-2xl bg-primary p-4 text-primary-foreground shadow-sm transition active:scale-[0.98] hover:opacity-95"
-                  : "flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition active:scale-[0.98] hover:bg-muted/40"
-              }
-            >
-              <span
-                className={
-                  a.tone === "primary"
-                    ? "grid h-10 w-10 place-items-center rounded-xl bg-primary-foreground/15"
-                    : "grid h-10 w-10 place-items-center rounded-xl bg-muted"
-                }
-              >
-                <Icon className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="text-sm font-bold leading-tight">{a.label}</p>
-                <p className={`mt-0.5 text-xs ${a.tone === "primary" ? "opacity-80" : "text-muted-foreground"}`}>
-                  {a.hint}
-                </p>
-              </div>
-            </Link>
+            <div key={k.label} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary"><Icon className="h-4.5 w-4.5" /></span>
+              <p className="mt-3 truncate font-display text-xl font-extrabold tracking-tight md:text-2xl">{k.value}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{k.label}</p>
+            </div>
           );
         })}
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
-      <div className="space-y-5">
-      {/* Wallet strip */}
-      <Link
-        to="/seller/wallet"
-        className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 shadow-sm transition hover:bg-muted/30 active:scale-[0.99]"
-      >
-        <div className="min-w-0">
-          <p className="text-xs font-medium text-muted-foreground">Available balance</p>
-          <p className="mt-0.5 font-display text-xl font-bold tracking-tight">
-            {formatGHC(Number(wallet?.balance ?? 0))}
-          </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            {formatGHC(Number(wallet?.pending ?? 0))} pending
-          </p>
+      {/* Tools */}
+      <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
+        <h2 className="px-1 pb-3 text-sm font-bold">Seller tools</h2>
+        <div className="grid grid-cols-4 gap-1 sm:gap-2 lg:grid-cols-8">
+          {tools.map((t) => {
+            const Icon = t.icon;
+            return (
+              <Link key={t.to} to={t.to} className="flex flex-col items-center gap-1.5 rounded-xl p-2 text-center transition hover:bg-muted/50 active:scale-95">
+                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary sm:h-12 sm:w-12"><Icon className="h-5 w-5" /></span>
+                <span className="text-[11px] font-semibold leading-tight sm:text-xs">{t.label}</span>
+              </Link>
+            );
+          })}
         </div>
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary">
-          Withdraw <ChevronRight className="h-3.5 w-3.5" />
-        </span>
-      </Link>
+      </section>
 
-      {/* Needs attention — only when relevant */}
-      {(openOrders.length > 0 || lowStock.length > 0 || pendingProducts > 0) && (
-        <section className="space-y-2">
-          <p className="px-0.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            Needs attention
-          </p>
-          <div className="space-y-2">
-            {openOrders.length > 0 && (
-              <Link
-                to="/seller/orders"
-                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 transition hover:bg-muted/30 active:scale-[0.99]"
-              >
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                  <ShoppingBag className="h-5 w-5" />
-                </span>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        {/* Orders */}
+        <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <h2 className="text-sm font-bold">Orders</h2>
+            <Link to="/seller/orders" className="text-xs font-semibold text-primary">See all</Link>
+          </div>
+          <div className="grid grid-cols-3 gap-2 border-b border-border p-3">
+            {pipeline.map((p) => (
+              <div key={p.label} className={`rounded-xl px-3 py-2.5 ${p.tone}`}>
+                <p className="font-display text-xl font-extrabold">{p.value}</p>
+                <p className="text-[11px] font-semibold">{p.label}</p>
+              </div>
+            ))}
+          </div>
+          <div className="divide-y divide-border">
+            {recentOrders.map((order) => (
+              <Link key={order.id} to="/seller/orders/$id" params={{ id: order.id }} className="flex items-center gap-3 px-4 py-3 transition hover:bg-muted/40">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground"><ShoppingBag className="h-4.5 w-4.5" /></span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold">
-                    {openOrders.length} order{openOrders.length === 1 ? "" : "s"} to process
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">Pack, ship, or mark delivered</p>
+                  <p className="truncate text-sm font-semibold">{order.items?.map((item: any) => item.name).join(", ") || "Order"}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">#{order.order_number} · {new Date(order.created_at).toLocaleDateString()}</p>
                 </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </Link>
-            )}
-            {lowStock.length > 0 && (
-              <Link
-                to="/seller/products"
-                className="flex items-center gap-3 rounded-2xl border border-warning/30 bg-warning/5 p-3.5 transition hover:bg-warning/10 active:scale-[0.99]"
-              >
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-warning/20 text-warning-ink">
-                  <AlertTriangle className="h-5 w-5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold">
-                    {lowStock.length} low-stock item{lowStock.length === 1 ? "" : "s"}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {lowStock.map((p) => p.name).slice(0, 3).join(", ")}
-                    {lowStock.length > 3 ? "…" : ""}
-                  </p>
+                <div className="shrink-0 text-right">
+                  <p className="text-sm font-bold">{formatGHC(order.subtotal)}</p>
+                  <span className="mt-0.5 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">{order.status}</span>
                 </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
               </Link>
-            )}
-            {pendingProducts > 0 && (
-              <Link
-                to="/seller/products"
-                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 transition hover:bg-muted/30 active:scale-[0.99]"
-              >
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
-                  <Clock className="h-5 w-5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold">
-                    {pendingProducts} product{pendingProducts === 1 ? "" : "s"} awaiting approval
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">Admin review in progress</p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </Link>
+            ))}
+            {recentOrders.length === 0 && (
+              <div className="px-4 py-10 text-center">
+                <ShoppingBag className="mx-auto h-10 w-10 text-muted-foreground/50" />
+                <p className="mt-2 text-sm font-semibold">No orders yet</p>
+                <p className="text-xs text-muted-foreground">Share your shop on WhatsApp to get your first sale.</p>
+              </div>
             )}
           </div>
         </section>
-      )}
 
-      </div>
-      {/* Recent orders */}
-      <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h2 className="text-sm font-bold">Recent orders</h2>
-          <Link to="/seller/orders" className="text-xs font-semibold text-primary">
-            See all
-          </Link>
-        </div>
-        <div className="divide-y divide-border">
-          {recentOrders.map((order) => (
-            <Link
-              key={order.id}
-              to="/seller/orders/$id"
-              params={{ id: order.id }}
-              className="flex items-center gap-3 px-4 py-3 transition hover:bg-muted/40 active:bg-muted/60"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">
-                  {order.items?.map((item: any) => item.name).join(", ") || "Order"}
-                </p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  #{order.order_number} · {new Date(order.created_at).toLocaleDateString()}
-                </p>
-              </div>
-              <div className="shrink-0 text-right">
-                <p className="text-sm font-bold">{formatGHC(order.subtotal)}</p>
-                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
-                  {order.status}
-                </p>
-              </div>
-            </Link>
-          ))}
-          {recentOrders.length === 0 && (
-            <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-              No orders yet. Share your shop to get your first sale.
-            </p>
-          )}
-        </div>
-      </section>
-
-      </div>
-
-      {/* Secondary shortcuts */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {[
-          { to: "/seller/products" as const, label: "Products", icon: Package },
-          { to: "/seller/pos" as const, label: "POS", icon: Store },
-          { to: "/seller/reviews" as const, label: "Reviews", icon: CheckCircle2 },
-          { to: "/seller/profile" as const, label: "Shop profile", icon: Store },
-        ].map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-3 text-sm font-semibold transition hover:bg-muted/40 active:scale-[0.98]"
-            >
-              <Icon className="h-4 w-4 text-muted-foreground" />
-              {item.label}
-            </Link>
-          );
-        })}
+        {/* To-do */}
+        <section className="space-y-3">
+          <h2 className="px-1 text-sm font-bold">Needs your attention</h2>
+          {tasks.length === 0 ? (
+            <div className="rounded-2xl border border-border bg-card p-5 text-center shadow-sm">
+              <CheckCircle2 className="mx-auto h-9 w-9 text-success" />
+              <p className="mt-2 text-sm font-bold">All caught up</p>
+              <p className="text-xs text-muted-foreground">Nothing needs action right now.</p>
+            </div>
+          ) : tasks.map((t) => {
+            const Icon = t.icon;
+            return (
+              <Link key={t.title} to={t.to} className={`flex items-center gap-3 rounded-2xl border p-3.5 shadow-sm transition active:scale-[0.99] ${t.warn ? "border-warning/30 bg-warning/5 hover:bg-warning/10" : "border-border bg-card hover:bg-muted/30"}`}>
+                <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${t.warn ? "bg-warning/20 text-warning-ink" : "bg-primary/10 text-primary"}`}><Icon className="h-5 w-5" /></span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold">{t.title}</p>
+                  <p className="truncate text-xs text-muted-foreground">{t.hint}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </Link>
+            );
+          })}
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <p className="text-xs font-semibold text-muted-foreground">Total earned on Kivora</p>
+            <p className="mt-1 font-display text-2xl font-extrabold">{formatGHC(Number(wallet?.total_earned ?? 0))}</p>
+          </div>
+        </section>
       </div>
     </div>
   );
