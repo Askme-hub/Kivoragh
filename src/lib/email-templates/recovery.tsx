@@ -14,11 +14,13 @@ import {
 interface RecoveryEmailProps {
   siteName: string
   confirmationUrl: string
+  token?: string
 }
 
 export const RecoveryEmail = ({
   siteName,
   confirmationUrl,
+  token,
 }: RecoveryEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head>
@@ -32,6 +34,13 @@ export const RecoveryEmail = ({
           We received a request to reset your password for {siteName}. Click
           the button below to choose a new password.
         </Text>
+        {token ? (
+          <>
+            <Text style={text}>Your password reset code is:</Text>
+            <Text style={code}>{token}</Text>
+            <Text style={text}>Enter it on Kivora within 1 hour. Or use the button below.</Text>
+          </>
+        ) : null}
         <Button className="dm-btn" style={button} href={confirmationUrl}>
           Reset Password
         </Button>
@@ -69,6 +78,7 @@ const button = {
   padding: '12px 20px',
   textDecoration: 'none',
 }
+const code = { fontSize: '28px', fontWeight: 'bold' as const, letterSpacing: '6px', color: '#000000', margin: '0 0 20px' }
 const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
 // Rendered as a text child, which React may HTML-escape: keep this CSS free of >, &, and quotes.
 const darkModeCss = `
