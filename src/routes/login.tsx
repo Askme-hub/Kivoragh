@@ -172,6 +172,9 @@ function Login() {
           </button>
         </div>
 
+        {mode === "login" && (
+          <Link to="/forgot-password" className="self-end text-sm font-semibold text-primary">Forgot password?</Link>
+        )}
         {mode === "signup" && (
           <label className="flex items-start gap-2 text-sm text-foreground">
             <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-1 h-4 w-4 accent-[hsl(var(--primary))]" />
