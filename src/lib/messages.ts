@@ -28,6 +28,7 @@ export type ChatMessage = {
   /** True once the recipient opened the conversation */
   read: boolean;
   created_at: string;
+  reply_to_id?: string | null;
 };
 
 /** Find or create the conversation between the current user (customer) and a seller. */
@@ -221,7 +222,7 @@ export function useMessages(conversationId: string | undefined, userId?: string)
 export function useSendMessage(conversationId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ body, senderId }: { body: string; senderId: string }) => {
+    mutationFn: async ({ body, senderId, replyToId }: { body: string; senderId: string; replyToId?: string | null }) => {
       const text = body.trim();
       if (!text) throw new Error("Type a message first.");
       // Don't send delivered/read here — DB defaults handle them after migration 0022.
@@ -230,6 +231,7 @@ export function useSendMessage(conversationId: string | undefined) {
         conversation_id: conversationId!,
         sender_id: senderId,
         body: text,
+        reply_to_id: replyToId ?? null,
       });
       if (error) throw error;
 

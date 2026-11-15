@@ -20,6 +20,13 @@ function timeAgo(iso: string) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+/** Turn stored links like "/messages?c=123" into router path + search. */
+function linkProps(link: string): { to: string; search?: Record<string, string> } {
+  const [path, qs] = link.split("?");
+  if (!qs) return { to: path };
+  return { to: path, search: Object.fromEntries(new URLSearchParams(qs)) };
+}
+
 const ICONS: Record<string, typeof Package> = {
   new_order: Package,
   low_stock: AlertTriangle,
@@ -99,7 +106,7 @@ export function NotificationBell() {
                 </div>
               );
               return n.link ? (
-                <Link key={n.id} to={n.link} className="block border-b border-border last:border-0">
+                <Link key={n.id} {...linkProps(n.link)} className="block border-b border-border last:border-0">
                   {inner}
                 </Link>
               ) : (
