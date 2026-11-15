@@ -18,8 +18,10 @@ export type PopupCampaign = {
 export const POPUP_SETTINGS_KEY = "popup_campaigns";
 
 export const DEFAULT_CAMPAIGNS: PopupCampaign[] = [
-  { id: "default-cart", title: "Don't leave your cart behind!", subtitle: "Pay on Delivery · Delivery across Ghana", code: "KIVORA10", cta_label: "Go to my cart", link_url: "/cart", trigger: "cart_nudge", active: true },
-  { id: "default-browse", title: "10% OFF your order", subtitle: "Pay on Delivery · Delivery across Ghana", code: "KIVORA10", cta_label: "Keep shopping", link_url: "/", trigger: "browsing", min_views: 2, active: true },
+  { id: "default-cart", title: "Pay only when it arrives", subtitle: "Pay on Delivery in all 16 regions · Your money is held safely for 48 hours", cta_label: "Finish my order", link_url: "/cart", trigger: "cart_nudge", active: true },
+  { id: "default-browse", title: "Get deals on WhatsApp", subtitle: "Chat with Kivora on 025 757 3471 for new arrivals, help and order updates", cta_label: "Chat on WhatsApp", link_url: "https://wa.me/233257573471?text=Hi%20Kivora%2C%20add%20me%20to%20your%20deals%20list", trigger: "browsing", min_views: 2, active: true },
+  { id: "default-install", title: "Add Kivora to your phone", subtitle: "Tap your browser menu, then \"Add to Home screen\" to shop faster and track orders", cta_label: "Got it", link_url: "/", trigger: "browsing", min_views: 4, active: true },
+  { id: "default-sell", title: "Sell on Kivora for free", subtitle: "Open your shop in minutes and reach buyers across Ghana", cta_label: "Open my shop", link_url: "/seller", trigger: "browsing", min_views: 6, active: true },
 ];
 
 const VIEWS_KEY = "kv_popup_views";
