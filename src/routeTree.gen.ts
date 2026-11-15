@@ -24,6 +24,7 @@ import { Route as MyReviewsRouteImport } from './routes/my-reviews'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RecentlyViewedRouteImport } from './routes/recently-viewed'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReturnsRouteImport } from './routes/returns'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SellerRouteImport } from './routes/seller'
@@ -146,6 +147,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const RecentlyViewedRoute = RecentlyViewedRouteImport.update({
   id: '/recently-viewed',
   path: '/recently-viewed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReturnsRoute = ReturnsRouteImport.update({
@@ -406,6 +412,7 @@ export interface FileRoutesByFullPath {
   '/orders': typeof OrdersRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/recently-viewed': typeof RecentlyViewedRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/returns': typeof ReturnsRoute
   '/search': typeof SearchRoute
   '/seller': typeof SellerRouteWithChildren
@@ -469,6 +476,7 @@ export interface FileRoutesByTo {
   '/my-reviews': typeof MyReviewsRoute
   '/privacy': typeof PrivacyRoute
   '/recently-viewed': typeof RecentlyViewedRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/returns': typeof ReturnsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -533,6 +541,7 @@ export interface FileRoutesById {
   '/orders': typeof OrdersRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/recently-viewed': typeof RecentlyViewedRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/returns': typeof ReturnsRoute
   '/search': typeof SearchRoute
   '/seller': typeof SellerRouteWithChildren
@@ -600,6 +609,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/privacy'
     | '/recently-viewed'
+    | '/reset-password'
     | '/returns'
     | '/search'
     | '/seller'
@@ -663,6 +673,7 @@ export interface FileRouteTypes {
     | '/my-reviews'
     | '/privacy'
     | '/recently-viewed'
+    | '/reset-password'
     | '/returns'
     | '/search'
     | '/settings'
@@ -726,6 +737,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/privacy'
     | '/recently-viewed'
+    | '/reset-password'
     | '/returns'
     | '/search'
     | '/seller'
@@ -792,6 +804,7 @@ export interface RootRouteChildren {
   OrdersRoute: typeof OrdersRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   RecentlyViewedRoute: typeof RecentlyViewedRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ReturnsRoute: typeof ReturnsRoute
   SearchRoute: typeof SearchRoute
   SellerRoute: typeof SellerRouteWithChildren
@@ -915,6 +928,13 @@ declare module '@tanstack/react-router' {
       path: '/recently-viewed'
       fullPath: '/recently-viewed'
       preLoaderRoute: typeof RecentlyViewedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/returns': {
@@ -1372,6 +1392,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrdersRoute: OrdersRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   RecentlyViewedRoute: RecentlyViewedRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ReturnsRoute: ReturnsRoute,
   SearchRoute: SearchRoute,
   SellerRoute: SellerRouteWithChildren,
