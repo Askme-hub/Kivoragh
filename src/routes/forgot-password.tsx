@@ -76,7 +76,7 @@ function ForgotPassword() {
       <button onClick={() => router.history.back()} aria-label="Back" className="w-8 h-8 flex items-center text-foreground"><ArrowLeft size={22} /></button>
       <h1 className="mt-6 text-2xl font-bold text-foreground">Forgot password?</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        {step === "request" ? "Enter your phone number or email. We'll send you a 6-digit code." : `Enter the code sent to ${id.trim()} and choose a new password.`}
+        {step === "request" ? "Enter your phone number or email. We'll send you a reset code." : `Enter the code sent to ${id.trim()} and choose a new password.`}
       </p>
 
       {step === "request" ? (
@@ -86,12 +86,12 @@ function ForgotPassword() {
         </form>
       ) : (
         <form onSubmit={reset} className="mt-6 flex flex-col gap-3">
-          <input required inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="6-digit code" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} className={`${field} tracking-[0.4em] text-center text-lg`} />
+          <input required inputMode="numeric" autoComplete="one-time-code" maxLength={isEmail ? 10 : 6} placeholder={isEmail ? "Code from email" : "6-digit code"} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} className={`${field} tracking-[0.4em] text-center text-lg`} />
           <div className="relative">
             <input type={show ? "text" : "password"} required minLength={8} autoComplete="new-password" placeholder="New password (min 8 characters)" value={password} onChange={(e) => setPassword(e.target.value)} className={`${field} pr-12`} />
             <button type="button" onClick={() => setShow(!show)} aria-label={show ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">{show ? <EyeOff size={18} /> : <Eye size={18} />}</button>
           </div>
-          <button type="submit" disabled={loading || code.length !== 6} className="bg-primary text-primary-foreground font-bold py-4 rounded-md tracking-widest disabled:opacity-60">{loading ? "..." : "RESET PASSWORD"}</button>
+          <button type="submit" disabled={loading || (isEmail ? code.length < 6 : code.length !== 6)} className="bg-primary text-primary-foreground font-bold py-4 rounded-md tracking-widest disabled:opacity-60">{loading ? "..." : "RESET PASSWORD"}</button>
           <button type="button" disabled={loading} onClick={() => sendCode()} className="text-sm text-primary font-semibold">Resend code</button>
           <button type="button" onClick={() => { setStep("request"); setCode(""); }} className="text-sm text-muted-foreground">Use a different phone or email</button>
         </form>
