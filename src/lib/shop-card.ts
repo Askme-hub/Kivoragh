@@ -126,36 +126,57 @@ export async function renderShopCard(shop: CardShop, format: CardFormat, theme: 
   ctx.textAlign = "left";
 
   if (format === "card") {
+    // Premium layout: solid panel left, QR panel right, accent rule, no emoji.
+    const panelX = 700;
+    ctx.fillStyle = theme === "white" ? "#18181B" : "#FFFFFF";
+    ctx.globalAlpha = theme === "white" ? 1 : 0.96;
+    ctx.fillRect(panelX, 0, W - panelX, H);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = t.accent === "#18181B" ? "#18181B" : t.accent;
+    ctx.fillRect(60, 214, 70, 6);
     await drawLogo(ctx, shop, 60, 60, 120, t);
-    const nameSize = fitText(ctx, shop.shop_name, 560, 56);
+    const nameSize = fitText(ctx, shop.shop_name, 580, 54);
     ctx.fillStyle = t.fg;
-    ctx.fillText(shop.shop_name, 60, 245 + (56 - nameSize) / 2);
-    let y = 290;
+    ctx.fillText(shop.shop_name, 60, 290 + (54 - nameSize) / 3);
+    let y = 330;
     if (shop.business_category) {
-      ctx.font = "700 24px Figtree, sans-serif";
+      ctx.font = "700 22px Figtree, sans-serif";
       ctx.fillStyle = t.sub;
-      ctx.fillText(shop.business_category.toUpperCase(), 60, y);
-      y += 20;
+      ctx.fillText(shop.business_category.toUpperCase().split("").join(String.fromCharCode(8202)), 60, y);
+      y += 22;
     }
-    if (shop.verified) { verified(ctx, 60, y, 1); y += 50; }
-    ctx.font = "600 26px Figtree, sans-serif";
-    ctx.fillStyle = t.fg;
-    y += 40;
-    if (shop.location) { ctx.fillText(`📍 ${shop.location}`, 60, y); y += 42; }
-    if (contact) { ctx.fillText(`📞 ${contact}`, 60, y); y += 42; }
-    await drawQr(ctx, url, 740, 120, 250, t);
-    ctx.font = "700 20px Figtree, sans-serif";
-    ctx.fillStyle = t.fg;
+    if (shop.verified) { verified(ctx, 60, y, 0.9); y += 46; }
+    y += 34;
+    const row = (label: string, value: string) => {
+      ctx.font = "700 17px Figtree, sans-serif";
+      ctx.fillStyle = t.sub;
+      ctx.fillText(label, 60, y);
+      ctx.font = "700 27px Figtree, sans-serif";
+      ctx.fillStyle = t.fg;
+      ctx.fillText(value, 60, y + 32);
+      y += 74;
+    };
+    if (contact) row("CALL / WHATSAPP", contact);
+    if (shop.location && y < H - 120) row("LOCATION", shop.location);
+    const panelFg = theme === "white" ? "#FFFFFF" : "#18181B";
+    await drawQr(ctx, url, panelX + 75, 110, 200, { ...t, qrDark: "#18181B" });
     ctx.textAlign = "center";
-    ctx.fillText("Scan to shop", 865, 420);
+    ctx.font = "800 24px Outfit, sans-serif";
+    ctx.fillStyle = panelFg;
+    ctx.fillText("Scan to shop", panelX + 175, 380);
+    ctx.font = "600 17px Figtree, sans-serif";
+    ctx.globalAlpha = 0.7;
+    ctx.fillText(url.replace("https://", ""), panelX + 175, 412);
+    ctx.globalAlpha = 1;
+    ctx.font = "800 26px Outfit, sans-serif";
+    ctx.fillStyle = "#F97316";
+    ctx.fillText("KIVORA", panelX + 175, H - 70);
+    ctx.font = "600 14px Figtree, sans-serif";
+    ctx.fillStyle = panelFg;
+    ctx.globalAlpha = 0.7;
+    ctx.fillText("Ghana's trusted marketplace", panelX + 175, H - 44);
+    ctx.globalAlpha = 1;
     ctx.textAlign = "left";
-    ctx.font = "600 20px Figtree, sans-serif";
-    ctx.fillStyle = t.sub;
-    ctx.fillText(url.replace("https://", ""), 60, H - 50);
-    ctx.textAlign = "right";
-    ctx.font = "800 22px Outfit, sans-serif";
-    ctx.fillStyle = t.fg;
-    ctx.fillText("KIVORA GH", W - 60, H - 50);
   } else {
     ctx.textAlign = "center";
     ctx.font = "800 40px Outfit, sans-serif";
@@ -183,8 +204,8 @@ export async function renderShopCard(shop: CardShop, format: CardFormat, theme: 
     ctx.font = "600 38px Figtree, sans-serif";
     ctx.fillStyle = t.fg;
     y += 60;
-    if (shop.location) { ctx.fillText(`📍 ${shop.location}`, W / 2, y); y += 60; }
-    if (contact) { ctx.fillText(`📞 ${contact}`, W / 2, y); y += 60; }
+    if (shop.location) { ctx.fillText(shop.location, W / 2, y); y += 60; }
+    if (contact) { ctx.fillText(`Call / WhatsApp ${contact}`, W / 2, y); y += 60; }
     await drawQr(ctx, url, W / 2 - 250, 1130, 500, t);
     ctx.textAlign = "center";
     ctx.font = "800 46px Outfit, sans-serif";
@@ -210,4 +231,50 @@ export function downloadBlob(blob: Blob, filename: string) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 30_000);
+}
+
+/** Auto-designed cover banner (1600x500) from shop details, for sellers without one. */
+export async function renderShopCover(shop: CardShop): Promise<HTMLCanvasElement> {
+  if (document.fonts?.ready) await document.fonts.ready;
+  const W = 1600, H = 500;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, "#F97316"); g.addColorStop(1, "#C2410C");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#FFFFFF";
+  for (const [x, y, r, a] of [[1450, 60, 260, 0.1], [1200, 520, 200, 0.08], [80, -40, 140, 0.07]] as const) {
+    ctx.globalAlpha = a; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = "right";
+  ctx.font = "800 120px Outfit, sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  const s = fitText(ctx, shop.shop_name, 900, 110);
+  ctx.fillText(shop.shop_name, W - 90, 260 + (110 - s) / 3);
+  ctx.font = "700 36px Figtree, sans-serif";
+  ctx.fillStyle = "#FFEDD5";
+  const line = [shop.business_category, shop.location].filter(Boolean).join("  •  ");
+  if (line) ctx.fillText(line, W - 90, 320);
+  ctx.font = "700 28px Figtree, sans-serif";
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillText("Shop now on Kivora", W - 90, 390);
+  return c;
+}
+
+/** Monogram logo (512x512) from the shop name. */
+export async function renderShopLogo(shop: CardShop): Promise<HTMLCanvasElement> {
+  if (document.fonts?.ready) await document.fonts.ready;
+  const c = document.createElement("canvas"); c.width = 512; c.height = 512;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createLinearGradient(0, 0, 512, 512);
+  g.addColorStop(0, "#F97316"); g.addColorStop(1, "#9A3412");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 512, 512);
+  ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 10;
+  ctx.beginPath(); ctx.arc(256, 256, 200, 0, Math.PI * 2); ctx.stroke();
+  const initials = shop.shop_name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "K";
+  ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.font = `800 ${initials.length > 1 ? 170 : 220}px Outfit, sans-serif`;
+  ctx.fillText(initials, 256, 266);
+  return c;
 }

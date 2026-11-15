@@ -14,8 +14,8 @@ export const Route = createFileRoute("/seller/products/new")({
 function NewProduct() {
   const router = useRouter();
   return (
-    <div className="mx-auto max-w-2xl p-4 pb-28">
-      <h2 className="text-xl font-extrabold">Add a product</h2>
+    <div className="mx-auto max-w-5xl p-4 pb-28 md:p-6">
+      <h2 className="text-xl font-extrabold md:text-2xl">Add a product</h2>
       <p className="mb-4 mt-1 text-sm text-muted-foreground">
         Three quick steps — a photo, a name and a price. Everything else is optional.
       </p>

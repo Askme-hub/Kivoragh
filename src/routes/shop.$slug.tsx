@@ -184,7 +184,16 @@ function StorePage() {
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="h-full w-full gradient-primary" />
+          <div className="relative h-full w-full overflow-hidden gradient-primary">
+            <div className="absolute -right-10 -top-16 h-56 w-56 rounded-full bg-primary-foreground/10" />
+            <div className="absolute -bottom-20 right-1/3 h-44 w-44 rounded-full bg-primary-foreground/10" />
+            <div className="absolute right-4 top-4 max-w-[70%] text-right text-primary-foreground sm:right-8 sm:top-8">
+              <p className="truncate font-display text-2xl font-extrabold sm:text-4xl">{store.shop_name}</p>
+              <p className="mt-1 truncate text-xs font-semibold opacity-90 sm:text-sm">
+                {[store.business_category, store.location].filter(Boolean).join(" • ") || "Shop now on Kivora"}
+              </p>
+            </div>
+          </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
       </div>
