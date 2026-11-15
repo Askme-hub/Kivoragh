@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Minus, Plus, Search } from "lucide-react";
+import { AlertTriangle, Minus, Plus, Search, Printer, Wand2 } from "lucide-react";
+import { generateBarcode } from "@/lib/barcode-gen";
+import { code128Svg } from "@/lib/barcode128";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -106,6 +108,44 @@ export function PosInventory() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const allCodes = () => products.map((x) => x.barcode ?? "").filter(Boolean);
+
+  const genMissing = useMutation({
+    mutationFn: async () => {
+      const codes = allCodes();
+      const missing = products.filter((x) => !(x.barcode ?? "").trim());
+      for (const m of missing) {
+        const code = generateBarcode(codes);
+        codes.push(code);
+        const { error } = await supabase.from("products").update({ barcode: code }).eq("id", m.id).eq("seller_id", user!.id);
+        if (error) throw error;
+      }
+      return missing.length;
+    },
+    onSuccess: (n) => {
+      toast.success(n ? `Created ${n} barcode${n > 1 ? "s" : ""}` : "Every product already has a barcode");
+      qc.invalidateQueries({ queryKey: ["pos-inventory"] });
+      qc.invalidateQueries({ queryKey: ["pos-products"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const printLabels = (rows: Row[]) => {
+    const list = rows.filter((r) => (r.barcode ?? "").trim());
+    if (!list.length) return toast.error("Create barcodes first");
+    const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+    let labels = "";
+    try {
+      labels = list.map((r) => `<div class="l"><b>${esc(r.name)}</b>${code128Svg(r.barcode!, 44, 2)}<div class="c">${esc(r.barcode!)}</div><div class="p">${esc(formatGHC(Number(r.price)))}</div></div>`).join("");
+    } catch {
+      return toast.error("A barcode has unsupported characters");
+    }
+    const w = window.open("", "_blank");
+    if (!w) return toast.error("Allow pop-ups to print labels");
+    w.document.write(`<html><head><title>Barcode labels</title><style>body{font-family:sans-serif;margin:8px;display:flex;flex-wrap:wrap;gap:6px}.l{width:50mm;border:1px dashed #999;padding:4px;text-align:center;font-size:10px;break-inside:avoid}.l b{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.c{font-family:monospace}.p{font-weight:bold;font-size:12px}</style></head><body>${labels}<script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+    w.document.close();
+  };
+
   const openEdit = (p: Row) => {
     setEditId(p.id);
     setEditStock(String(p.stock ?? 0));
@@ -152,6 +192,14 @@ export function PosInventory() {
               {k === "nobarcode" && stats.noCode > 0 ? ` (${stats.noCode})` : ""}
             </button>
           ))}
+        </div>
+        <div className="flex gap-2">
+          <button type="button" disabled={genMissing.isPending} onClick={() => genMissing.mutate()} className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50">
+            <Wand2 className="h-4 w-4" /> {genMissing.isPending ? "Creating…" : "Auto barcodes"}
+          </button>
+          <button type="button" onClick={() => printLabels(filtered)} className="inline-flex items-center gap-1 rounded-xl border border-border px-3 py-2 text-xs font-bold">
+            <Printer className="h-4 w-4" /> Print labels
+          </button>
         </div>
         <p className="text-xs text-muted-foreground">
           Use the <strong>Import</strong> tab for CSV barcodes &amp; stock.
@@ -220,6 +268,14 @@ export function PosInventory() {
                         </button>
                         <button
                           type="button"
+                          onClick={() => printLabels([p])}
+                          className="grid h-9 w-9 place-items-center rounded-xl border border-border"
+                          aria-label="Print barcode label"
+                        >
+                          <Printer className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => openEdit(p)}
                           className="rounded-xl px-2.5 py-2 text-xs font-bold text-primary"
                         >
@@ -229,7 +285,7 @@ export function PosInventory() {
                     )}
                   </div>
                   {editing && (
-                    <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                    <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
                       <input
                         value={editStock}
                         onChange={(e) => setEditStock(e.target.value)}
@@ -245,6 +301,9 @@ export function PosInventory() {
                         placeholder="Barcode / SKU"
                         className="rounded-xl border border-input bg-background px-3 py-2 font-mono text-sm"
                       />
+                      <button type="button" onClick={() => setEditBarcode(generateBarcode(allCodes()))} className="inline-flex items-center justify-center gap-1 rounded-xl border border-border px-3 py-2 text-xs font-bold text-primary">
+                        <Wand2 className="h-4 w-4" /> Generate
+                      </button>
                       <div className="flex gap-2">
                         <button
                           type="button"

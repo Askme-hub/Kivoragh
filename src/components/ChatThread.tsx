@@ -644,6 +644,18 @@ export function ChatThread({
             </button>
           </div>
         )}
+        {!text.trim() && !replyTo && (
+          <div className="mx-auto mb-2 flex max-w-3xl gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+            {(otherIsSeller
+              ? ["Is this still available?", "What's the last price?", "Do you deliver to my area?", "When can I get it?"]
+              : ["Yes, it's available ✅", "Thanks for your order!", "I'll deliver today", "Please confirm your location"]
+            ).map((q) => (
+              <button key={q} type="button" onClick={() => { setText(q); textareaRef.current?.focus(); }} className="shrink-0 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary active:scale-95">
+                {q}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="mx-auto flex max-w-3xl items-end gap-2">
           <textarea
             ref={textareaRef}
