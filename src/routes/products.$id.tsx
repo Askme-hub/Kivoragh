@@ -1,3 +1,4 @@
+import { trackProductView } from "@/lib/popup-campaigns";
 import { trackViewed } from "@/lib/recently-viewed";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -89,6 +90,7 @@ function ProductSkeleton() {
 
 function ProductDetails() {
   const { product: data } = Route.useLoaderData();
+  useEffect(() => { if (data?.id) trackProductView(data.category); }, [data?.id]);
   const router = useRouter();
   const { data: reviewData } = useProductReviews(data?.id);
   const reviewCount = reviewData?.length ?? 0;
