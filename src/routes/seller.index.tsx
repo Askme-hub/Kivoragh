@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import { PushToggle } from "@/components/PushToggle";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -125,6 +126,7 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
     { to: "/seller/wallet" as const, label: "Wallet", icon: Wallet },
     { to: "/seller/reviews" as const, label: "Reviews", icon: Star },
     { to: "/seller/profile" as const, label: "Shop profile", icon: Settings },
+    { to: "/seller/captions" as const, label: "AI captions", icon: Sparkles },
   ];
   const pipeline = [
     { label: "To pack", value: toPack, tone: "bg-warning/15 text-warning-ink" },
@@ -191,7 +193,7 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
       {/* Tools */}
       <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
         <h2 className="px-1 pb-3 text-sm font-bold">Seller tools</h2>
-        <div className="grid grid-cols-4 gap-1 sm:gap-2 lg:grid-cols-8">
+        <div className="grid grid-cols-4 gap-1 sm:gap-2 lg:grid-cols-9">
           {tools.map((t) => {
             const Icon = t.icon;
             return (
