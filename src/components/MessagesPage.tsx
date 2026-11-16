@@ -39,13 +39,13 @@ export function MessagesPage({
   const isSellerView = (conversations ?? []).some((c) => c.seller_id === userId);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background">
       <div className="mx-auto max-w-5xl md:px-4 md:py-4">
-        <div className="grid md:grid-cols-[340px_1fr] md:gap-3 md:h-[calc(100dvh-6rem)]">
+        <div className="grid grid-cols-1 md:grid-cols-[340px_minmax(0,1fr)] md:gap-3 md:h-[calc(100dvh-6rem)]">
           {/* Conversation list */}
           <div
             className={cn(
-              "flex flex-col md:overflow-hidden md:rounded-2xl md:border md:border-border md:bg-card",
+              "flex min-w-0 flex-col md:overflow-hidden md:rounded-2xl md:border md:border-border md:bg-card",
               active ? "hidden md:flex" : "flex",
             )}
           >
@@ -109,7 +109,7 @@ export function MessagesPage({
           {/* Active thread */}
           <div
             className={cn(
-              "md:overflow-hidden md:rounded-2xl md:border md:border-border md:bg-card",
+              "min-w-0 md:overflow-hidden md:rounded-2xl md:border md:border-border md:bg-card",
               active ? "block" : "hidden md:block",
             )}
           >
