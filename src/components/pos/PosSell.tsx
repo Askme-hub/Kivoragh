@@ -278,10 +278,13 @@ export function PosSell() {
   const resumeSale = (id: string) => {
     const h = held.find((x) => x.id === id);
     if (!h) return;
-    if (lines.length) holdSale();
+    if (lines.length) {
+      toast.error("Finish or hold the current sale first");
+      return;
+    }
     setCart(h.cart);
     setCustName(h.label.startsWith("Customer ") ? "" : h.label);
-    saveHeld(held.filter((x) => x.id !== id).concat(lines.length ? [] : []));
+    saveHeld(held.filter((x) => x.id !== id));
     setHeldOpen(false);
   };
   const clearCart = () => {
