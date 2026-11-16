@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { WorkspaceShell, type WorkspaceItem } from "@/components/WorkspaceShell";
 
 export const Route = createFileRoute("/admin")({
+  ssr: false,
   component: AdminLayout,
   head: () => ({ meta: [
     { title: "Admin Workspace — Kivora Ghana" },
