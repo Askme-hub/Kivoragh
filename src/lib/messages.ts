@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { flushMyPushes } from "./push.functions";
+import { previewBody } from "./chat-product";
 
 export type Conversation = {
   id: string;
@@ -94,7 +95,7 @@ export function useConversations(userId: string | undefined) {
       const lastMap = new Map<string, string>();
       const unreadMap = new Map<string, number>();
       for (const m of msgs ?? []) {
-        if (!lastMap.has(m.conversation_id)) lastMap.set(m.conversation_id, m.body);
+        if (!lastMap.has(m.conversation_id)) lastMap.set(m.conversation_id, previewBody(m.body) ?? "");
         if (!m.read && m.sender_id !== userId) {
           unreadMap.set(m.conversation_id, (unreadMap.get(m.conversation_id) ?? 0) + 1);
         }
