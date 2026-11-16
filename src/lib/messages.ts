@@ -17,6 +17,8 @@ export type Conversation = {
   other_shop?: string | null;
   last_body?: string | null;
   unread?: number;
+  /** Status of the last message when the current user sent it */
+  last_status?: "sent" | "delivered" | "read" | null;
 };
 
 export type ChatMessage = {
@@ -88,14 +90,18 @@ export function useConversations(userId: string | undefined) {
       const convoIds = convos.map((c) => c.id);
       const { data: msgs } = await supabase
         .from("messages")
-        .select("conversation_id, body, read, sender_id, created_at")
+        .select("conversation_id, body, read, delivered, sender_id, created_at")
         .in("conversation_id", convoIds)
         .order("created_at", { ascending: false });
 
       const lastMap = new Map<string, string>();
       const unreadMap = new Map<string, number>();
+      const statusMap = new Map<string, Conversation["last_status"]>();
       for (const m of msgs ?? []) {
-        if (!lastMap.has(m.conversation_id)) lastMap.set(m.conversation_id, previewBody(m.body) ?? "");
+        if (!lastMap.has(m.conversation_id)) {
+          lastMap.set(m.conversation_id, previewBody(m.body) ?? "");
+          statusMap.set(m.conversation_id, m.sender_id === userId ? (m.read ? "read" : m.delivered ? "delivered" : "sent") : null);
+        }
         if (!m.read && m.sender_id !== userId) {
           unreadMap.set(m.conversation_id, (unreadMap.get(m.conversation_id) ?? 0) + 1);
         }
@@ -109,6 +115,7 @@ export function useConversations(userId: string | undefined) {
           other_name: shopMap.get(other) ?? nameMap.get(other) ?? "Kivora user",
           last_body: lastMap.get(c.id) ?? null,
           unread: unreadMap.get(c.id) ?? 0,
+          last_status: statusMap.get(c.id) ?? null,
         };
       });
     },
