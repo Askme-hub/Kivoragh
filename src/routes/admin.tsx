@@ -39,7 +39,7 @@ function AdminLayout() {
         n(supabase.from("seller_profiles").select("user_id", { count: "exact", head: true }).eq("status", "pending")),
         n(supabase.from("withdrawal_requests").select("id", { count: "exact", head: true }).eq("status", "pending")),
         n(supabase.from("order_issues").select("id", { count: "exact", head: true }).eq("status", "open")),
-        n(supabase.from("chat_reports").select("id", { count: "exact", head: true }).eq("status", "pending")),
+        n(supabase.from("chat_reports").select("id", { count: "exact", head: true }).eq("status", "open")),
       ]);
       return { products, sellers, payouts, issues, reports };
     },
