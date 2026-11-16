@@ -284,7 +284,7 @@ export function MobileTopBar() {
             <span className="min-w-0 leading-none">
               <span className="block truncate text-lg font-black uppercase italic tracking-tight">Kivora<span className="opacity-80">★</span></span>
               <span className="mt-0.5 flex items-center gap-1 truncate text-[10px] font-semibold opacity-90">
-                <Truck size={11} /> Pay on delivery · 16 regions
+                <Truck size={11} /> {site.tagline}
               </span>
             </span>
           </Link>
