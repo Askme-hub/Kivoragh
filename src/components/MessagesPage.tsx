@@ -205,6 +205,11 @@ function ConversationRow({
               unread > 0 ? "font-medium text-foreground" : "text-muted-foreground",
             )}
           >
+            {c.last_status && (
+              <span className={cn("mr-1 font-bold", c.last_status === "read" ? "text-sky-500" : "text-muted-foreground")} aria-label={c.last_status}>
+                {c.last_status === "sent" ? "✓" : "✓✓"}
+              </span>
+            )}
             {c.last_body ?? "No messages yet"}
           </p>
           {unread > 0 && (
