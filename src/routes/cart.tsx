@@ -179,7 +179,7 @@ function Cart() {
             <Button variant="ghost"
               onClick={checkout}
               disabled={going}
-              className="h-12 min-w-0 flex-1 rounded-md bg-primary py-3.5 font-bold text-primary-foreground transition active:scale-[0.98] disabled:opacity-60"
+              className="h-12 min-w-0 flex-1 btn-hot py-3.5 font-bold  transition active:scale-[0.98] disabled:opacity-60"
             >
               {going ? "Loading…" : `Checkout (${formatGHC(total)})`}
             </Button>

@@ -64,7 +64,7 @@ function CaptionStudio() {
             </div>
           </div>
           <button onClick={go} disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-60">
+            className="flex w-full items-center justify-center gap-2 btn-hot py-3 font-semibold  disabled:opacity-60">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} {loading ? "Writing captions…" : "Create captions"}
           </button>
         </div>

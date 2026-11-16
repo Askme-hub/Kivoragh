@@ -329,7 +329,7 @@ export function ProductForm({
         </div>
         <button
           disabled={busy || uploading}
-          className="w-full rounded-xl bg-primary py-3.5 font-bold text-primary-foreground shadow-lg disabled:opacity-60"
+          className="w-full btn-hot py-3.5 font-bold  shadow-lg disabled:opacity-60"
         >
           {busy
             ? "Saving…"

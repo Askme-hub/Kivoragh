@@ -2,9 +2,9 @@
 
 - [x] Home, header, categories
 - [x] Product page
-- [ ] Cart
-- [ ] Checkout
-- [ ] Categories & search results
-- [ ] Shop (seller storefront)
-- [ ] Account, orders, wishlist
-- [ ] Seller hub & POS
+- [x] Cart
+- [x] Checkout
+- [x] Categories & search results
+- [x] Shop (seller storefront)
+- [x] Account, orders, wishlist
+- [x] Seller hub & POS

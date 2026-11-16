@@ -107,7 +107,7 @@ function Login() {
         <p className="mt-2 text-sm text-muted-foreground">
           We sent a confirmation link to <span className="font-semibold text-foreground">{sentTo}</span>. Open it to activate your account, then log in. We'll verify your phone number by SMS right after.
         </p>
-        <button onClick={() => { setSentTo(null); setMode("login"); }} className="mt-6 w-full bg-primary text-primary-foreground font-bold py-4 rounded-md">
+        <button onClick={() => { setSentTo(null); setMode("login"); }} className="mt-6 w-full btn-hot py-4">
           Go to log in
         </button>
       </div>
@@ -188,7 +188,7 @@ function Login() {
         <button
           type="submit"
           disabled={loading || (mode === "signup" && !agree)}
-          className="mt-1 bg-primary text-primary-foreground font-bold py-4 rounded-md tracking-widest disabled:opacity-60"
+          className="mt-1 btn-hot py-4 tracking-widest disabled:opacity-60"
         >
           {loading ? "..." : mode === "login" ? "LOG IN" : "CREATE ACCOUNT"}
         </button>
