@@ -142,7 +142,7 @@ export function AppDrawer() {
         className="w-[82%] max-w-xs p-0 flex flex-col bg-background"
       >
         {/* Brand header */}
-        <div className="bg-primary text-primary-foreground p-5 flex items-center gap-3">
+        <div className="brand-band bg-primary p-5 flex items-center gap-3">
           {user ? (
             <UserAvatar user={user} size={44} className="ring-2 ring-primary-foreground/50" />
           ) : (
@@ -275,7 +275,7 @@ export function MobileTopBar() {
 
   return (
     <header className="md:hidden sticky top-0 z-40 shadow-elevated">
-      <div className="bg-gradient-to-br from-primary via-primary to-flash pb-3 text-primary-foreground">
+      <div className="brand-band bg-gradient-to-br from-primary via-primary to-flash pb-3">
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 pt-3">
           <AppDrawer />
           <Link to="/" className="flex min-w-0 items-center gap-2">

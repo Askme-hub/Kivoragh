@@ -505,3 +505,13 @@
   0% { transform: translateX(-100%); }
   100% { transform: translateX(300%); }
 }
+
+/* Brand band: orange surfaces keep white chips + white text in both themes */
+@utility brand-band {
+  --primary-foreground: oklch(1 0 0);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.2 0.01 40);
+  --muted-foreground: oklch(0.5 0.01 40);
+  --card: oklch(1 0 0);
+  color: var(--primary-foreground);
+}
