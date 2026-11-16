@@ -507,28 +507,50 @@ function Checkout() {
 
       {/* Progress indicator */}
       <div className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-3 md:px-6">
-          <Button variant="ghost" size="sm" onClick={() => setMobileStep("delivery")} aria-label="Edit delivery"><StepBadge n={1} label="Delivery" active={mobileStep === "delivery"} /></Button>
-          <ChevronRight size={14} className="text-muted-foreground/60" />
+        <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-3.5 md:px-6">
+          <button type="button" onClick={() => setMobileStep("delivery")} aria-label="Edit delivery"><StepBadge n={1} label="Delivery" active={mobileStep === "delivery"} done={mobileStep === "payment"} /></button>
+          <div className={cn("h-0.5 flex-1 rounded-full", mobileStep === "payment" ? "bg-success" : "bg-border")} />
           <StepBadge n={2} label="Payment" active={mobileStep === "payment"} />
-          <ChevronRight size={14} className="text-muted-foreground/60" />
-          <StepBadge n={3} label="Done" />
+          <div className="h-0.5 flex-1 rounded-full bg-border" />
+          <StepBadge n={3} label="Confirm" />
         </div>
       </div>
 
-      <div className="mx-auto max-w-5xl px-0 py-4 md:px-6 md:py-8">
+      <div className="border-b border-border bg-primary-soft/60">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 overflow-x-auto px-4 py-2 text-[11px] font-semibold text-foreground md:px-6">
+          <span className="flex shrink-0 items-center gap-1.5"><ShieldCheck size={14} className="text-success" />48h buyer protection</span>
+          <span className="flex shrink-0 items-center gap-1.5"><Banknote size={14} className="text-primary" />Pay when it arrives</span>
+          <span className="flex shrink-0 items-center gap-1.5"><Truck size={14} className="text-primary" />Delivery across Ghana</span>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-5xl px-3 py-4 md:px-6 md:py-8">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_340px] md:items-start lg:grid-cols-[minmax(0,1fr)_380px]">
           {/* ============ LEFT COLUMN – Form ============ */}
           <div className="min-w-0 space-y-4">
             {/* Delivery methods remain available before an address is saved. */}
-            <section id="delivery-section" className={cn("border-y border-border bg-card", mobileStep !== "delivery" && "hidden md:block")}>
-              <h2 className="px-4 pt-4 text-sm font-semibold">Delivery Method</h2>
-              <Tabs value={deliveryType} onValueChange={(value) => setDeliveryType(value as "door" | "pickup")} className="mt-3">
-                <TabsList className="grid h-12 w-full grid-cols-2 rounded-none bg-muted p-0">
-                  <TabsTrigger value="pickup" className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary"><Store size={16} />Pickup Stations</TabsTrigger>
-                  <TabsTrigger value="door" className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary"><Truck size={16} />Door Delivery</TabsTrigger>
-                </TabsList>
-              </Tabs>
+            <section id="delivery-section" className={cn("overflow-hidden rounded-2xl border border-border bg-card shadow-sm", mobileStep !== "delivery" && "hidden md:block")}>
+              <div className="flex items-center gap-3 border-b border-border px-4 py-3.5 md:px-5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10"><Truck size={18} className="text-primary" /></div>
+                <div><h2 className="text-sm font-semibold">Delivery Method</h2><p className="text-xs text-muted-foreground">How do you want to receive your order?</p></div>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5 px-4 pt-4 md:px-5">
+                {([
+                  { v: "door", icon: Truck, title: "Door Delivery", sub: `${zone.eta}`, fee: shipping },
+                  { v: "pickup", icon: Store, title: "Pickup Station", sub: stations.length ? `${stations.length} available` : "Not available", fee: null },
+                ] as const).map((o) => {
+                  const on = deliveryType === o.v;
+                  return (
+                    <button key={o.v} type="button" aria-pressed={on} onClick={() => setDeliveryType(o.v)}
+                      className={cn("relative flex flex-col items-start gap-1 rounded-xl border-2 p-3 text-left transition", on ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40")}>
+                      <o.icon size={20} className={on ? "text-primary" : "text-muted-foreground"} />
+                      <span className="text-sm font-semibold">{o.title}</span>
+                      <span className="text-[11px] text-muted-foreground">{o.sub}</span>
+                      {on && <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary"><Check size={12} className="text-primary-foreground" /></span>}
+                    </button>
+                  );
+                })}
+              </div>
               <div className="p-4">
                 {deliveryType === "door" ? (
                   <div className="flex gap-3 text-sm"><Truck className="shrink-0 text-primary" size={22} /><div><p className="font-semibold">Delivered to your address</p><p className="mt-1 text-xs text-muted-foreground">{zone.label} · {zone.eta}</p></div></div>
@@ -543,7 +565,7 @@ function Checkout() {
             {/* ---- Delivery Address ---- */}
             <section
               id="address-section"
-              className={cn("border-y border-border bg-card", mobileStep !== "delivery" && "hidden md:block")}
+              className={cn("overflow-hidden rounded-2xl border border-border bg-card shadow-sm", mobileStep !== "delivery" && "hidden md:block")}
             >
               <div className="flex items-center gap-3 border-b border-border px-4 py-3.5 md:px-5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
@@ -724,7 +746,7 @@ function Checkout() {
             </section>
 
             {/* ---- Payment Method ---- */}
-            <section className={cn("border-y border-border bg-card", mobileStep !== "payment" && "hidden md:block")}>
+            <section className={cn("overflow-hidden rounded-2xl border border-border bg-card shadow-sm", mobileStep !== "payment" && "hidden md:block")}>
               <div className="flex items-center gap-3 border-b border-border px-4 py-3.5 md:px-5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
                   <CreditCard size={18} className="text-primary" />
@@ -810,11 +832,18 @@ function Checkout() {
                     </div>
                   )}
                 </Button>
+                <div className="flex items-start gap-3 rounded-xl border border-success/30 bg-success/10 p-3.5">
+                  <ShieldCheck size={20} className="mt-0.5 shrink-0 text-success" />
+                  <div>
+                    <p className="text-sm font-semibold">Kivora Buyer Protection</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Check your item before paying. Money is held for 48 hours, and you can report any problem to Kivora support.</p>
+                  </div>
+                </div>
               </div>
             </section>
 
             {/* ---- Coupon ---- */}
-            <section className={cn("border-y border-border bg-card", mobileStep !== "payment" && "hidden md:block")}>
+            <section className={cn("overflow-hidden rounded-2xl border border-border bg-card shadow-sm", mobileStep !== "payment" && "hidden md:block")}>
               <div className="flex items-center gap-3 border-b border-border px-4 py-3.5 md:px-5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
                   <TicketPercent size={18} className="text-primary" />
@@ -868,7 +897,7 @@ function Checkout() {
             </section>
 
             {/* Mobile-only order summary (appears above sticky bar) */}
-            <section className={cn("border-y border-border bg-card md:hidden", mobileStep !== "payment" && "hidden")}>
+            <section className={cn("overflow-hidden rounded-2xl border border-border bg-card shadow-sm md:hidden", mobileStep !== "payment" && "hidden")}>
               <div className="p-4">
                 <OrderSummaryContent />
               </div>
@@ -920,16 +949,16 @@ function Checkout() {
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 shadow-lg backdrop-blur pb-[env(safe-area-inset-bottom)] md:hidden">
         <div className="mx-auto max-w-md px-4 py-3">
           <div className="mb-3 flex items-center justify-between"><span className="text-sm text-muted-foreground">Total ({itemCount} items)</span><span className="text-lg font-bold">{formatGHC(grand)}</span></div>
-          {mobileStep === "delivery" ? <Button className="h-12 w-full" disabled={paying || saveAddress.isPending} onClick={() => {
+          {mobileStep === "delivery" ? <Button className="h-12 w-full rounded-xl text-base font-bold shadow-md" disabled={paying || saveAddress.isPending} onClick={() => {
             if (!selected || showForm) { toast.info("Save your delivery address to continue"); document.getElementById("address-section")?.scrollIntoView({ behavior: "smooth" }); return; }
             if (deliveryType === "pickup" && !pickupStation) { toast.info("Choose a pickup station to continue"); document.getElementById("delivery-section")?.scrollIntoView({ behavior: "smooth" }); return; }
             setMobileStep("payment"); window.scrollTo({ top: 0, behavior: "instant" });
           }}>Continue to Payment<ChevronRight size={16} /></Button> : <>
             {blocker && <p className="mb-2 text-xs text-danger-ink">{blocker}</p>}
-            <Button onClick={pay} disabled={paying || !!blocker} className="h-12 w-full">{paying ? <><Loader2 size={18} className="animate-spin" />Processing…</> : <><Lock size={16} />{paymentMethod === "cod" ? "Confirm Order · Pay on Delivery" : "Pay Securely"}</>}</Button>
+            <Button onClick={pay} disabled={paying || !!blocker} className="h-12 w-full rounded-xl text-base font-bold shadow-md">{paying ? <><Loader2 size={18} className="animate-spin" />Processing…</> : <><Lock size={16} />{paymentMethod === "cod" ? "Confirm Order · Pay on Delivery" : "Pay Securely"}</>}</Button>
           </>}
         </div>
       </div>
@@ -1006,18 +1035,18 @@ function Checkout() {
 /*  Small presentational helpers                                              */
 /* -------------------------------------------------------------------------- */
 
-function StepBadge({ n, label, active }: { n: number; label: string; active?: boolean }) {
+function StepBadge({ n, label, active, done }: { n: number; label: string; active?: boolean; done?: boolean }) {
   return (
     <div className="flex items-center gap-1.5">
       <span
         className={cn(
-          "flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold",
-          active
-            ? "bg-primary text-primary-foreground"
+          "flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold",
+          done ? "bg-success text-success-foreground" : active
+            ? "bg-primary text-primary-foreground ring-4 ring-primary/15"
             : "bg-muted text-muted-foreground",
         )}
       >
-        {n}
+        {done ? <Check size={11} /> : n}
       </span>
       <span
         className={cn(
