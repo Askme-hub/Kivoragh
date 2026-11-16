@@ -10,6 +10,7 @@ import kivoraIcon from "@/assets/kivora-icon.png";
 import { UserAvatar } from "@/components/UserAvatar";
 import { InboxBell } from "@/components/InboxBell";
 import { MessageBell } from "@/components/MessageBell";
+import { HeaderChips } from "@/components/AppDrawer";
 
 export function TopNav() {
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -29,6 +30,7 @@ export function TopNav() {
 
   return (
     <header className="sticky top-0 z-40 hidden border-b border-border bg-background shadow-sm md:block">
+      <div className="h-1 bg-gradient-to-r from-primary via-flash to-primary" />
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 lg:gap-5 lg:px-6">
         <Link to="/" className="flex shrink-0 items-center gap-2">
           <img src={kivoraIcon} alt="Kivora" className="h-9 w-9 rounded-lg" />
@@ -40,11 +42,11 @@ export function TopNav() {
         <button
           onClick={() => openSearch(true)}
           aria-label="Search"
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-muted py-1.5 pl-5 pr-1.5 text-left text-muted-foreground transition hover:bg-muted/70"
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-background ring-2 ring-primary py-1.5 pl-5 pr-1.5 text-left text-muted-foreground transition hover:bg-muted/70"
         >
           <Search size={20} className="shrink-0" />
           <span className="min-w-0 flex-1 truncate text-[15px]">Search products, brands and categories</span>
-          <span className="rounded-full bg-primary hidden px-6 py-2 text-sm font-bold text-primary-foreground lg:inline">Search</span>
+          <span className="rounded-full bg-gradient-to-r from-primary to-flash hidden px-6 py-2 text-sm font-bold text-primary-foreground lg:inline">Search</span>
         </button>
 
         <nav className="flex shrink-0 items-center gap-0.5 lg:gap-1">
@@ -77,18 +79,8 @@ export function TopNav() {
         </nav>
       </div>
 
-      <div className="mx-auto max-w-7xl overflow-x-auto px-6 scrollbar-none">
-        <div className="flex items-center gap-6 pb-2.5 text-[15px] text-foreground">
-          <Link to="/categories" className="flex shrink-0 items-center gap-2 hover:text-primary">
-            <LayoutGrid size={18} /> All Categories
-          </Link>
-          {categories.map((c) => (
-            <Link key={c.id} to="/categories" search={{ c: c.name }} className="flex shrink-0 items-center gap-2 hover:text-primary">
-              {c.image_url && <img src={c.image_url} alt="" className="h-5 w-5 rounded object-cover" />}
-              {c.name}
-            </Link>
-          ))}
-        </div>
+      <div className="border-t border-border/60">
+        <div className="mx-auto max-w-7xl px-6"><HeaderChips desktop /></div>
       </div>
     </header>
   );
