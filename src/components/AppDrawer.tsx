@@ -130,9 +130,10 @@ export function AppDrawer() {
       <SheetTrigger asChild>
         <button
           aria-label="Open menu"
-          className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-foreground active:scale-95 transition"
+          className="flex h-10 items-center gap-1 rounded-full bg-background pl-2.5 pr-3 text-primary shadow-elevated ring-2 ring-primary-foreground/60 transition active:scale-95"
         >
-          <Menu size={22} />
+          <Menu size={22} strokeWidth={2.75} />
+          <span className="text-[11px] font-black uppercase">Menu</span>
         </button>
       </SheetTrigger>
 
@@ -276,7 +277,7 @@ export function MobileTopBar() {
     <header className="md:hidden sticky top-0 z-40 shadow-elevated">
       <div className="bg-gradient-to-br from-primary via-primary to-flash pb-3 text-primary-foreground">
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 pt-3">
-          <div className="rounded-full bg-primary-foreground/15 text-primary-foreground [&_button]:text-primary-foreground"><AppDrawer /></div>
+          <AppDrawer />
           <Link to="/" className="flex min-w-0 items-center gap-2">
             <img src={kivoraIcon} alt="Kivora" className="h-9 w-9 shrink-0 rounded-xl ring-2 ring-primary-foreground/40" />
             <span className="min-w-0 leading-none">
