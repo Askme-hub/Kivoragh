@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { X, Gift, Copy } from "lucide-react";
-import { toast } from "sonner";
 import { useShop } from "@/lib/store";
+import { useAuth } from "@/hooks/use-auth";
+import { GiftEnvelope, envelopeCtaClass } from "@/components/GiftEnvelope";
 import { getPopupCampaigns } from "@/lib/popup-campaigns.functions";
 import { pickCampaign, readViews, type PopupCampaign } from "@/lib/popup-campaigns";
 
@@ -19,6 +19,8 @@ export function PromoPopup() {
   const [open, setOpen] = useState<PopupCampaign | null>(null);
   const exitRef = useRef(false);
   const [tick, setTick] = useState(0);
+  const { user, loading } = useAuth();
+  const [welcome, setWelcome] = useState(false);
 
   const blocked = BLOCKED.some((b) => path.startsWith(b));
 
@@ -40,6 +42,14 @@ export function PromoPopup() {
     };
   }, []);
 
+  // Signed-out visitors: invite them to register once per visit.
+  useEffect(() => {
+    if (loading || user || blocked || sessionStorage.getItem(SESSION_KEY)) return;
+    const t = setTimeout(() => { setWelcome(true); sessionStorage.setItem(SESSION_KEY, "1"); }, 3000);
+    return () => clearTimeout(t);
+  }, [loading, user, blocked]);
+  useEffect(() => { if (user) setWelcome(false); }, [user]);
+
   useEffect(() => {
     if (open || blocked || !campaigns.length || sessionStorage.getItem(SESSION_KEY)) return;
     let seen: Record<string, number> = {};
@@ -54,39 +64,31 @@ export function PromoPopup() {
     return () => clearTimeout(t);
   }, [tick, campaigns, cartCount, blocked, open, path]);
 
+  if (welcome && !blocked) {
+    return (
+      <GiftEnvelope
+        eyebrow="Free surprises for new shoppers"
+        title="Register to unlock surprises & perks"
+        perks={[{ tag: "GH₵0 risk", text: "Pay on Delivery at your doorstep" }, { tag: "Surprise", text: "Member perks & fast order tracking" }]}
+        onClose={() => setWelcome(false)}
+        cta={<Link to="/login" onClick={() => setWelcome(false)} className={envelopeCtaClass}>Register to unlock</Link>}
+      />
+    );
+  }
   if (!open) return null;
   const close = () => setOpen(null);
   const link = open.link_url || "/";
   const external = /^https?:/.test(link);
+  const label = open.cta_label || "Shop now";
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/50 p-4" onClick={close}>
-      <div className="relative w-full max-w-sm overflow-hidden rounded-3xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <button onClick={close} aria-label="Close" className="absolute right-3 top-3 z-10 rounded-full bg-background/80 p-1.5"><X className="h-4 w-4" /></button>
-        {open.image_url ? (
-          <img src={open.image_url} alt="" className="h-44 w-full object-cover" />
-        ) : (
-          <div className="bg-gradient-to-br from-primary to-primary/70 px-6 pt-8 pb-2 text-center text-primary-foreground"><Gift className="mx-auto h-10 w-10" /></div>
-        )}
-        <div className={open.image_url ? "px-6 pt-5 text-center" : "bg-gradient-to-br from-primary to-primary/70 px-6 pb-7 pt-2 text-center text-primary-foreground"}>
-          <p className="text-2xl font-extrabold">{open.title}</p>
-          {open.subtitle && <p className="mt-1 text-sm opacity-90">{open.subtitle}</p>}
-        </div>
-        <div className="space-y-3 p-5 text-center">
-          {open.code && (
-            <>
-              <p className="text-sm text-muted-foreground">Use this code at checkout</p>
-              <button onClick={() => { navigator.clipboard?.writeText(open.code!); toast.success("Code copied"); }} className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary py-2 text-xl font-bold tracking-widest text-primary">
-                {open.code} <Copy className="h-4 w-4" />
-              </button>
-            </>
-          )}
-          {external ? (
-            <a href={link} onClick={close} className="block w-full rounded-xl bg-primary py-3 font-semibold text-primary-foreground">{open.cta_label || "Shop now"}</a>
-          ) : (
-            <Link to={link} onClick={close} className="block w-full rounded-xl bg-primary py-3 font-semibold text-primary-foreground">{open.cta_label || "Shop now"}</Link>
-          )}
-        </div>
-      </div>
-    </div>
+    <GiftEnvelope
+      eyebrow="A gift from Kivora"
+      title={open.title}
+      perks={[{ tag: "Kivora", text: open.subtitle || "Shop safely across Ghana" }, ...(open.code ? [{ tag: open.code, text: "Use this code at checkout" }] : [])]}
+      onClose={close}
+      cta={external
+        ? <a href={link} onClick={close} className={envelopeCtaClass}>{label}</a>
+        : <Link to={link} onClick={close} className={envelopeCtaClass}>{label}</Link>}
+    />
   );
 }
