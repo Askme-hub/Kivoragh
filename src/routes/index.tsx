@@ -1,3 +1,4 @@
+import { useSiteContent, telHref, waNumber } from "@/lib/site-content";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -129,6 +130,7 @@ function CategoryBand({
 }
 
 function Home() {
+  const site = useSiteContent();
   const { data: products = [], isLoading } = useProducts();
   const { data: categories = [] } = useCategories();
   const { data: grouped } = useGroupedProducts();
@@ -230,7 +232,7 @@ function Home() {
       {/* CALL TO ORDER */}
       <div className="mt-6 px-4">
         <a
-          href="tel:0257573471"
+          href={telHref(site.phone_primary)}
           className="flex items-center gap-3 rounded-3xl bg-primary-soft px-4 py-3.5 shadow-soft"
         >
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-primary text-primary-foreground">
@@ -239,7 +241,7 @@ function Home() {
           <span className="min-w-0">
             <span className="block text-sm font-extrabold text-foreground">Call to order</span>
             <span className="block truncate text-xs text-muted-foreground">
-              025 757 3471 · 055 247 4242
+              {site.phone_primary} · {site.phone_secondary}
             </span>
           </span>
         </a>

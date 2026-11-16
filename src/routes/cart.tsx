@@ -1,3 +1,4 @@
+import { useSiteContent, telHref, waNumber } from "@/lib/site-content";
 import { ClientOnly, createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { Minus, Plus, Trash2, Truck, ShoppingBag, ChevronRight, Phone, ShoppingCart } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/cart")({
 });
 
 function Cart() {
+  const site = useSiteContent();
   const router = useRouter();
   const cart = useShop((s) => s.cart);
   const updateQty = useShop((s) => s.updateQty);
@@ -175,7 +177,7 @@ function Cart() {
               <span className="text-lg font-extrabold text-foreground">{formatGHC(total)}</span>
             </div>
             <div className="flex gap-3">
-            <Button asChild variant="outline" size="icon" className="h-12 w-12 shrink-0"><a href="tel:0257573471" aria-label="Call Kivora to order"><Phone size={20} /></a></Button>
+            <Button asChild variant="outline" size="icon" className="h-12 w-12 shrink-0"><a href={telHref(site.phone_primary)} aria-label="Call Kivora to order"><Phone size={20} /></a></Button>
             <Button variant="ghost"
               onClick={checkout}
               disabled={going}

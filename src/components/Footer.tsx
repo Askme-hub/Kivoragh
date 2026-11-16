@@ -1,3 +1,4 @@
+import { useSiteContent, telHref, waNumber } from "@/lib/site-content";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Facebook, Instagram, Twitter, Youtube, Phone, Mail, MapPin, Download, Smartphone, Share2 } from "lucide-react";
 import { toast } from "sonner";
@@ -93,6 +94,7 @@ function AppStoreBadge({ className }: { className?: string }) {
 }
 
 export function Footer() {
+  const site = useSiteContent();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { available, installed, isIOS } = useInstallPrompt();
 
@@ -174,15 +176,15 @@ export function Footer() {
           <ul className="mt-3 space-y-3 text-sm text-muted-foreground">
             <li className="flex items-start gap-2">
               <Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <span>025 757 3471</span>
+              <span>{site.phone_primary}</span>
             </li>
             <li className="flex items-start gap-2">
               <Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <span>055 247 4242</span>
+              <span>{site.phone_secondary}</span>
             </li>
             <li className="flex items-start gap-2">
               <Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <span className="min-w-0 break-all">support@kivoragh.shop</span>
+              <span className="min-w-0 break-all">{site.email}</span>
             </li>
             <li className="flex items-start gap-2">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />

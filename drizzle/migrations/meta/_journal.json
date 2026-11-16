@@ -183,6 +183,13 @@
       "when": 1794852503226,
       "tag": "0025_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794870771781,
+      "tag": "0026_admin_users_site_content",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { useSiteContent, telHref, waNumber } from "@/lib/site-content";
 import { InboxBell } from "@/components/InboxBell";
 import { MessageBell } from "@/components/MessageBell";
 import { Link, useRouterState, useRouter } from "@tanstack/react-router";
@@ -264,6 +265,7 @@ export function AppDrawer() {
 
 /** Mobile top bar with hamburger + brand + cart + always-visible search pill. */
 export function MobileTopBar() {
+  const site = useSiteContent();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const count = useShop((s) => s.cartCount());
   const openSearch = useSearchUI((s) => s.setOpen);
@@ -283,7 +285,7 @@ export function MobileTopBar() {
             <span className="min-w-0 leading-none">
               <span className="block truncate text-lg font-black uppercase italic tracking-tight">Kivora<span className="opacity-80">★</span></span>
               <span className="mt-0.5 flex items-center gap-1 truncate text-[10px] font-semibold opacity-90">
-                <Truck size={11} /> Pay on delivery · 16 regions
+                <Truck size={11} /> {site.tagline}
               </span>
             </span>
           </Link>
@@ -315,8 +317,8 @@ export function MobileTopBar() {
         </div>
         <HeaderChips />
       </div>
-      <a href="tel:+233257573471" className="flex items-center justify-center gap-2 border-b border-border bg-card py-1.5 text-[11px] font-semibold text-foreground">
-        <Phone size={13} className="text-primary" /> Call to Order: <span className="font-black text-primary">025 757 3471</span>
+      <a href={telHref(site.phone_primary)} className="flex items-center justify-center gap-2 border-b border-border bg-card py-1.5 text-[11px] font-semibold text-foreground">
+        <Phone size={13} className="text-primary" /> Call to Order: <span className="font-black text-primary">{site.phone_primary}</span>
       </a>
     </header>
   );
