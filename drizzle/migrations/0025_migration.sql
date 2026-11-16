@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS conversations_pair_unique ON public.conversations (least(customer_id, seller_id), greatest(customer_id, seller_id));
