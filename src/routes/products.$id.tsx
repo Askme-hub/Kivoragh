@@ -163,7 +163,7 @@ function ProductDetails() {
         <>
           <Link
             to="/cart"
-            className="flex-1 rounded-2xl border-2 border-primary py-3.5 text-center font-bold text-primary transition active:scale-[0.98]"
+            className="flex-1 rounded-full border-2 border-primary py-3.5 text-center font-bold text-primary transition active:scale-[0.98]"
           >
             View Cart
           </Link>
@@ -174,14 +174,14 @@ function ProductDetails() {
               if (ok) toast.success("Added to cart");
               else toast.error(`Only ${product.stock ?? 0} in stock`);
             }}
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 font-bold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
+            className="flex flex-[1.4] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary to-flash py-3.5 font-extrabold uppercase tracking-wide text-primary-foreground shadow-elevated transition active:scale-[0.98] disabled:opacity-50"
           >
             <ShoppingCart size={18} /> {data.stock <= 0 ? "Out of stock" : "Add to Cart"}
           </button>
         </>
       ) : (
         <>
-          <div className="flex flex-1 items-center justify-between overflow-hidden rounded-2xl bg-muted">
+          <div className="flex flex-1 items-center justify-between overflow-hidden rounded-full bg-muted">
             <button
               onClick={() => updateQty(product.id, cartQty - 1)}
               className="flex h-12 w-12 items-center justify-center text-primary transition hover:bg-primary/10"
@@ -204,7 +204,7 @@ function ProductDetails() {
           </div>
           <Link
             to="/cart"
-            className="flex flex-1 items-center justify-center rounded-2xl bg-primary py-3.5 font-bold text-primary-foreground transition active:scale-[0.98]"
+            className="flex flex-1 items-center justify-center rounded-full bg-gradient-to-r from-primary to-flash py-3.5 font-extrabold uppercase tracking-wide text-primary-foreground shadow-elevated transition active:scale-[0.98]"
           >
             Checkout
           </Link>
@@ -249,7 +249,7 @@ function ProductDetails() {
               />
             </div>
 
-            <div className="order-3 mt-2 bg-card p-4 lg:mt-0 lg:rounded-2xl lg:border lg:border-border">
+            <div className="order-3 mx-3 mt-3 rounded-2xl border border-border bg-card p-4 shadow-soft lg:mx-0 lg:mt-0 lg:rounded-2xl lg:border lg:border-border">
               <h2 className="mb-2 font-bold text-foreground">Product Description</h2>
               <p className="whitespace-pre-line text-sm text-foreground/80">
                 {data.description ?? "No description provided for this product."}
@@ -262,7 +262,7 @@ function ProductDetails() {
           {/* RIGHT: buy box */}
           <div className="order-2 lg:space-y-4">
             <div className="relative -mt-6 rounded-t-3xl bg-card p-5 lg:mt-0 lg:rounded-2xl lg:border lg:border-border lg:shadow-soft">
-              <h1 className="text-xl font-bold tracking-tight text-foreground lg:text-2xl">{product.name}</h1>
+              <h1 className="text-lg font-extrabold leading-snug tracking-tight text-foreground lg:text-2xl">{product.name}</h1>
 
               {/* Stat pills */}
               <div className="mt-3 flex flex-wrap gap-2">
@@ -283,10 +283,31 @@ function ProductDetails() {
               </div>
 
               {/* Price box */}
-              <div className="mt-4 flex items-baseline gap-2 rounded-2xl bg-muted px-4 py-3">
-                <span className="text-xl font-extrabold text-foreground">{formatGHC(product.price)}</span>
-                {oldPrice && <span className="text-sm text-muted-foreground line-through">{formatGHC(oldPrice)}</span>}
+              <div className={`brand-band mt-4 overflow-hidden rounded-2xl px-4 py-3 shadow-elevated ${product.discount ? "bg-gradient-to-r from-flash to-primary" : "bg-gradient-to-r from-primary to-flash"}`}>
+                {product.discount ? (
+                  <p className="flex items-center gap-1 text-[11px] font-extrabold uppercase italic tracking-wider opacity-90">
+                    <Zap size={12} fill="currentColor" /> Deal price · save {formatGHC((oldPrice ?? product.price) - product.price)}
+                  </p>
+                ) : (
+                  <p className="text-[11px] font-extrabold uppercase tracking-wider opacity-90">Kivora price</p>
+                )}
+                <div className="mt-0.5 flex items-baseline gap-2">
+                  <span className="text-3xl font-black tracking-tight">{formatGHC(product.price)}</span>
+                  {oldPrice && <span className="text-sm line-through opacity-75">{formatGHC(oldPrice)}</span>}
+                  {product.discount ? <span className="ml-auto rounded-md bg-background px-2 py-0.5 text-xs font-black text-flash">-{product.discount}%</span> : null}
+                </div>
               </div>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center text-[11px] font-semibold">
+                <div className="rounded-xl bg-success/10 px-2 py-2 text-success-ink"><BadgeCheck size={16} className="mx-auto mb-0.5" />Pay on delivery</div>
+                <div className="rounded-xl bg-primary-soft px-2 py-2 text-primary"><Truck size={16} className="mx-auto mb-0.5" />16 regions</div>
+                <div className="rounded-xl bg-primary-soft px-2 py-2 text-primary"><Shield size={16} className="mx-auto mb-0.5" />48h protection</div>
+              </div>
+              {data.stock > 0 && data.stock <= 10 && (
+                <div className="mt-3">
+                  <p className="flex items-center gap-1 text-xs font-bold text-flash"><Flame size={13} /> Almost gone — only {data.stock} left</p>
+                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-gradient-to-r from-primary to-flash" style={{ width: `${Math.max(10, data.stock * 10)}%` }} /></div>
+                </div>
+              )}
 
               {data.description && (
                 <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">{data.description}</p>
@@ -298,7 +319,7 @@ function ProductDetails() {
 
             <SellerCard sellerId={data.seller_id ?? null} productId={data.id} />
 
-            <div className="mt-2 space-y-3 bg-card p-4 lg:mt-0 lg:rounded-2xl lg:border lg:border-border">
+            <div className="mx-3 mt-3 space-y-3 rounded-2xl border border-border bg-card p-4 shadow-soft lg:mx-0 lg:mt-0 lg:rounded-2xl lg:border lg:border-border">
               <div className="flex items-center gap-3 text-sm">
                 <Truck size={18} className="text-primary" />
                 <div>
@@ -319,7 +340,7 @@ function ProductDetails() {
       </div>
 
       {/* Sticky mobile buy bar */}
-      <div className="fixed bottom-[84px] left-0 right-0 z-40 mx-auto max-w-md border-t border-border bg-card p-3 md:bottom-0 lg:hidden">
+      <div className="fixed bottom-[84px] left-0 right-0 z-40 mx-auto max-w-md border-t border-border bg-card/95 p-3 backdrop-blur md:bottom-0 lg:hidden">
         {buyBox}
       </div>
     </div>
@@ -331,7 +352,7 @@ function SellerCard({ sellerId, productId }: { sellerId: string | null; productI
   const { data: seller } = useSellerBadge(sellerId);
   if (!seller) return null;
   return (
-    <div className="mt-2 bg-card p-4 lg:mt-0 lg:rounded-2xl lg:border lg:border-border">
+    <div className="mx-3 mt-3 rounded-2xl border border-border bg-card p-4 shadow-soft lg:mx-0 lg:mt-0">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Sold by
       </p>
