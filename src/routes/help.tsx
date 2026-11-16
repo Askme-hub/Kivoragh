@@ -1,3 +1,4 @@
+import { useSiteContent, telHref, waNumber } from "@/lib/site-content";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { InfoPage, InfoSection } from "@/components/InfoPage";
 
@@ -61,8 +62,8 @@ function HelpCenter() {
       </InfoSection>
 
       <InfoSection heading="Still need us?">
-        <p>Call 025 757 3471 or 055 247 4242.</p>
-        <p>Email support@kivoragh.shop — we reply within one working day.</p>
+        <p>Call {site.phone_primary} or {site.phone_secondary}.</p>
+        <p>Email {site.email} — we reply within one working day.</p>
       </InfoSection>
     </InfoPage>
   );

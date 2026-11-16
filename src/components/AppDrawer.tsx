@@ -1,3 +1,4 @@
+import { useSiteContent, telHref, waNumber } from "@/lib/site-content";
 import { InboxBell } from "@/components/InboxBell";
 import { MessageBell } from "@/components/MessageBell";
 import { Link, useRouterState, useRouter } from "@tanstack/react-router";
@@ -315,8 +316,8 @@ export function MobileTopBar() {
         </div>
         <HeaderChips />
       </div>
-      <a href="tel:+233257573471" className="flex items-center justify-center gap-2 border-b border-border bg-card py-1.5 text-[11px] font-semibold text-foreground">
-        <Phone size={13} className="text-primary" /> Call to Order: <span className="font-black text-primary">025 757 3471</span>
+      <a href={telHref(site.phone_primary)} className="flex items-center justify-center gap-2 border-b border-border bg-card py-1.5 text-[11px] font-semibold text-foreground">
+        <Phone size={13} className="text-primary" /> Call to Order: <span className="font-black text-primary">{site.phone_primary}</span>
       </a>
     </header>
   );

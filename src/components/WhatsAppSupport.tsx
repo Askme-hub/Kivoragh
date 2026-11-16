@@ -1,3 +1,4 @@
+import { useSiteContent, telHref, waNumber } from "@/lib/site-content";
 import { useState, useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { X, ChevronRight } from "lucide-react";
@@ -51,7 +52,7 @@ export function WhatsAppSupport() {
             <ul className="p-2">
               {topics.map((t) => (
                 <li key={t.title}>
-                  <a href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(t.msg)}`} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}
+                  <a href={`https://wa.me/${waNumber(site.whatsapp)}?text=${encodeURIComponent(t.msg)}`} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}
                     className="flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-muted active:bg-muted">
                     <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><t.icon size={21} /></span>
                     <span className="min-w-0 flex-1"><span className="block text-sm font-bold">{t.title}</span><span className="block truncate text-xs text-muted-foreground">{t.sub}</span></span>
@@ -60,7 +61,7 @@ export function WhatsAppSupport() {
                 </li>
               ))}
             </ul>
-            <p className="border-t border-border px-4 py-2 text-center text-[11px] text-muted-foreground">Opens WhatsApp · 025 757 3471</p>
+            <p className="border-t border-border px-4 py-2 text-center text-[11px] text-muted-foreground">Opens WhatsApp · {site.whatsapp}</p>
           </div>
         )}
         <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="Get help from Kivora support" className="group">
@@ -73,7 +74,7 @@ export function WhatsAppSupport() {
             </span>
             <span className="relative hidden flex-col text-left leading-tight md:flex">
               <span className="text-sm font-extrabold">Need help?</span>
-              <span className="text-[11px] font-medium opacity-90">Chat with us · 025 757 3471</span>
+              <span className="text-[11px] font-medium opacity-90">Chat with us · {site.whatsapp}</span>
             </span>
           </span>
         </button>
