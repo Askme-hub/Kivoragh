@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Zap, Phone, ChevronRight, PackageOpen, Truck } from "lucide-react";
+import { Zap, Phone, ChevronRight, PackageOpen, Truck, ShieldCheck, BadgeCheck, Sparkles } from "lucide-react";
 
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCardSkeleton, ProductGridSkeleton } from "@/components/ProductCardSkeleton";
@@ -55,8 +55,13 @@ function Countdown({ to }: { to?: string }) {
   const pad = (n: number) => String(n).padStart(2, "0");
 
   return (
-    <span className="tabular-nums">
-      {pad(h)}:{pad(m)}:{pad(s)}
+    <span className="inline-flex items-center gap-0.5 tabular-nums">
+      {[h, m, s].map((v, i) => (
+        <span key={i} className="inline-flex items-center gap-0.5">
+          <span className="rounded bg-flash-foreground px-1 py-0.5 text-[12px] font-black text-flash">{pad(v)}</span>
+          {i < 2 && <span className="font-black">:</span>}
+        </span>
+      ))}
     </span>
   );
 }
@@ -157,6 +162,23 @@ function Home() {
         <InstallAppButton />
       </div>
 
+      {/* TRUST STRIP */}
+      <div className="mt-4 grid grid-cols-3 gap-2 px-4">
+        {[
+          { icon: ShieldCheck, t: "Pay on delivery", d: "Inspect first" },
+          { icon: Truck, t: "16 regions", d: "Nationwide" },
+          { icon: BadgeCheck, t: "Verified sellers", d: "48h protection" },
+        ].map(({ icon: I, t, d }) => (
+          <div key={t} className="flex items-center gap-1.5 rounded-xl bg-card px-2 py-2 ring-1 ring-border/60">
+            <I size={18} className="shrink-0 text-primary" />
+            <div className="min-w-0 leading-tight">
+              <p className="truncate text-[11px] font-bold text-foreground">{t}</p>
+              <p className="truncate text-[10px] text-muted-foreground">{d}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* DELIVERY PROMO PILL */}
       <div className="mt-4 px-4">
         <Link
@@ -188,9 +210,9 @@ function Home() {
                 search={{ c: c.name }}
                 className="flex w-16 shrink-0 flex-col items-center gap-1.5 text-center"
               >
-                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-transparent bg-muted transition hover:border-primary">
+                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary-soft p-0.5 ring-2 ring-primary/70 ring-offset-2 ring-offset-background transition hover:scale-105">
                   {c.image_url ? (
-                    <img src={c.image_url} alt={c.name} className="h-full w-full object-cover" />
+                    <img src={c.image_url} alt={c.name} className="h-full w-full rounded-full object-cover" />
                   ) : (
                     <PackageOpen size={22} className="text-primary" />
                   )}
@@ -206,30 +228,31 @@ function Home() {
       )}
 
       {/* FLASH SALES */}
-      <section id="flash-sales" className="mt-7 scroll-mt-20">
-        <div className="flex items-center justify-between gap-3 px-4">
-          <div className="flex min-w-0 items-center gap-2">
-            <h2 className="truncate text-xl font-bold tracking-tight text-foreground">
+      <section id="flash-sales" className="mx-3 mt-7 scroll-mt-20 overflow-hidden rounded-2xl bg-flash shadow-elevated md:mx-4">
+        <div className="flex items-center justify-between gap-3 px-3 py-3 text-flash-foreground">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h2 className="flex items-center gap-1 truncate text-lg font-black uppercase italic tracking-tight md:text-2xl">
+              <Zap size={20} fill="currentColor" className="animate-pulse" />
               {flashSale?.title ?? "Flash Sale"}
             </h2>
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-flash px-1.5 py-0.5 text-[11px] font-bold text-flash-foreground">
-              <Zap size={11} fill="currentColor" />
-              <Countdown to={flashSale?.ends_at} />
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold">
+              Ends in <Countdown to={flashSale?.ends_at} />
             </span>
           </div>
-          <SeeAll />
+          <Link to="/categories" className="flex shrink-0 items-center gap-0.5 rounded-full bg-flash-foreground px-3 py-1.5 text-xs font-bold text-flash">
+            All <ChevronRight size={14} />
+          </Link>
         </div>
-
-        <div className="mt-3 overflow-x-auto scrollbar-none">
-          <div className="flex gap-3 px-4 pb-2">
+        <div className="overflow-x-auto bg-flash/90 scrollbar-none">
+          <div className="flex gap-2.5 px-3 pb-3">
             {isLoading
               ? Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="min-w-[160px] max-w-[170px]">
+                  <div key={i} className="min-w-[150px] max-w-[160px]">
                     <ProductCardSkeleton />
                   </div>
                 ))
               : displayFlash.map((p: Product) => (
-                  <div key={p.id} className="min-w-[160px] max-w-[170px]">
+                  <div key={p.id} className="min-w-[150px] max-w-[160px]">
                     <ProductCard product={p} />
                   </div>
                 ))}
@@ -257,7 +280,13 @@ function Home() {
 
       {/* RECOMMENDED */}
       <section className="mt-7">
-        <SectionHead title="Recommended For You" />
+        <div className="mb-3 flex items-center justify-center gap-2 px-4">
+          <span className="h-px flex-1 bg-border" />
+          <h2 className="flex items-center gap-1.5 text-lg font-black uppercase tracking-tight text-foreground md:text-2xl">
+            <Sparkles size={18} className="text-primary" /> Picked for you
+          </h2>
+          <span className="h-px flex-1 bg-border" />
+        </div>
         {isLoading ? (
           <div className="px-4">
             <ProductGridSkeleton count={10} />
@@ -269,7 +298,7 @@ function Home() {
             description="Check back soon for new arrivals and amazing deals."
           />
         ) : (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-6 px-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2.5 px-3 md:gap-3 md:px-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {products.slice(0, 12).map((p: Product) => (
               <ProductCard key={p.id} product={p} />
             ))}
