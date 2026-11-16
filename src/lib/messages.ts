@@ -47,8 +47,9 @@ export async function startConversation(input: {
   const { data: existing } = await supabase
     .from("conversations")
     .select("id, product_id")
-    .eq("customer_id", customerId)
-    .eq("seller_id", sellerId)
+    .or(
+      `and(customer_id.eq.${customerId},seller_id.eq.${sellerId}),and(customer_id.eq.${sellerId},seller_id.eq.${customerId})`,
+    )
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -65,7 +66,21 @@ export async function startConversation(input: {
     .insert({ customer_id: customerId, seller_id: sellerId, product_id: productId, order_id: orderId })
     .select("id")
     .single();
-  if (error) throw error;
+  if (error) {
+    // Another tab/device created the pair's chat at the same moment — reuse it.
+    if ((error as { code?: string }).code === "23505") {
+      const { data: again } = await supabase
+        .from("conversations")
+        .select("id")
+        .or(
+          `and(customer_id.eq.${customerId},seller_id.eq.${sellerId}),and(customer_id.eq.${sellerId},seller_id.eq.${customerId})`,
+        )
+        .limit(1)
+        .maybeSingle();
+      if (again) return again.id as string;
+    }
+    throw error;
+  }
   return data.id as string;
 }
 
