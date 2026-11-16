@@ -36,6 +36,7 @@ import { doorDeliveryFee, zoneForRegion, DELIVERY_ZONES } from "@/lib/delivery-z
 import { useDeliveryZones } from "@/lib/use-delivery-zones";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { DetectLocationButton } from "@/components/DetectLocationButton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/checkout")({
@@ -639,6 +640,14 @@ function Checkout() {
                       {addresses.length === 0 ? "Add your first address" : "New address"}
                     </p>
 
+                    <DetectLocationButton
+                      onDetected={(a) => {
+                        if (a.region) set("region", a.region);
+                        if (a.city) set("city", a.city);
+                        if (a.address) set("address", a.address);
+                      }}
+                    />
+
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Field
                         label="Label"
@@ -703,7 +712,7 @@ function Checkout() {
                       value={form.address}
                       onChange={(v) => set("address", v)}
                       error={errors.address}
-                      placeholder="House number, street, nearby landmark"
+                      placeholder="House no., street, landmark or GhanaPost GPS (e.g. GA-183-9022)"
                       textarea
                     />
 

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { Package, ShoppingBag, Mail, Store, ArrowDownToLine, LayoutGrid, Image as ImageIcon, Gauge, Wallet, TicketPercent, Zap , Crown, LifeBuoy, Truck, MessageSquareDot } from "lucide-react";
+import { Package, ShoppingBag, Mail, Store, ArrowDownToLine, LayoutGrid, Image as ImageIcon, Gauge, Wallet, TicketPercent, Zap , Crown, LifeBuoy, Truck, MessageSquareDot, Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { WorkspaceShell, type WorkspaceItem } from "@/components/WorkspaceShell";
 
@@ -34,19 +34,21 @@ function AdminLayout() {
     refetchInterval: 60000,
     queryFn: async () => {
       const n = async (q: any) => (await q).count ?? 0;
-      const [products, sellers, payouts, issues] = await Promise.all([
+      const [products, sellers, payouts, issues, reports] = await Promise.all([
         n(supabase.from("products").select("id", { count: "exact", head: true }).eq("approval_status", "pending")),
         n(supabase.from("seller_profiles").select("user_id", { count: "exact", head: true }).eq("status", "pending")),
         n(supabase.from("withdrawal_requests").select("id", { count: "exact", head: true }).eq("status", "pending")),
         n(supabase.from("order_issues").select("id", { count: "exact", head: true }).eq("status", "open")),
+        n(supabase.from("chat_reports").select("id", { count: "exact", head: true }).eq("status", "pending")),
       ]);
-      return { products, sellers, payouts, issues };
+      return { products, sellers, payouts, issues, reports };
     },
   });
   const tabs: WorkspaceItem[] = [
     { to: "/admin" as const, label: "Overview", icon: Gauge, exact: true, group: "Dashboard" },
     { to: "/admin/orders" as const, label: "Orders", icon: ShoppingBag, group: "Dashboard" },
     { to: "/admin/issues" as const, label: "Issues", icon: LifeBuoy, group: "Dashboard", badge: c?.issues },
+    { to: "/admin/reports" as const, label: "Chat Reports", icon: Flag, group: "Dashboard", badge: c?.reports },
     { to: "/admin/products" as const, label: "Products", icon: Package, group: "Catalogue", badge: c?.products },
     { to: "/admin/categories" as const, label: "Categories", icon: LayoutGrid, group: "Catalogue" },
     { to: "/admin/banners" as const, label: "Banners", icon: ImageIcon, group: "Catalogue" },
