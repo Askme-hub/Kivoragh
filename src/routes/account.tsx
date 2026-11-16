@@ -40,7 +40,7 @@ function Account() {
         <div className="px-4 py-10 text-center">
           <h1 className="text-xl font-bold">You're not logged in</h1>
           <p className="text-muted-foreground text-sm mt-2">Sign in to view your account, orders and inbox.</p>
-          <Link to="/login" className="inline-block mt-4 bg-primary text-primary-foreground font-bold px-6 py-3 rounded-md">
+          <Link to="/login" className="inline-block mt-4 btn-hot px-6 py-3">
             Log in / Sign up
           </Link>
         </div>
@@ -111,7 +111,7 @@ function Account() {
       <div className="bg-muted px-4 py-3 flex gap-2">
         <a
           href="tel:+233257573471"
-          className="flex-1 bg-primary text-primary-foreground font-bold py-3 rounded-md flex items-center justify-center gap-2"
+          className="flex-1 btn-hot py-3 flex items-center justify-center gap-2"
         >
           <MessageSquare size={18} /> Call Support
         </a>

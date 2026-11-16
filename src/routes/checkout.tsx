@@ -1007,7 +1007,7 @@ function Checkout() {
                     setOtpBusy(false);
                   }
                 }}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+                className="flex flex-1 items-center justify-center gap-1.5 btn-hot py-2.5 text-sm disabled:opacity-60"
               >
                 {otpBusy ? <Loader2 size={16} className="animate-spin" /> : "Verify"}
               </Button>
