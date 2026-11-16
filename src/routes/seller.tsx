@@ -59,6 +59,11 @@ function SellerLayout() {
     );
   }
 
+  // POS opens as a full-screen terminal without the workspace sidebar
+  if (path === "/seller/pos" || path.startsWith("/seller/pos/")) {
+    return <Outlet />;
+  }
+
   const tabs: WorkspaceItem[] = [
     // Overview
     { to: "/seller", label: "Dashboard", icon: Store, exact: true, group: "Overview", quick: true },
