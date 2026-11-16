@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, CheckCheck, SendHorizonal, X, Store, User, ChevronDown, Reply } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, SendHorizonal, X, Store, User, ChevronDown, Reply, Tag, ShieldCheck, BadgeCheck, AlertTriangle, Search } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { encodeProductTag, parseProductTag, looksRisky } from "@/lib/chat-product";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
@@ -235,6 +237,104 @@ function ChatProfileSheet({
   );
 }
 
+type TagProduct = { id: string; name: string; price: number; old_price: number | null; image_url: string | null; stock: number };
+const PRODUCT_COLS = "id, name, price, old_price, image_url, stock";
+
+function useTaggedProducts(ids: string[]) {
+  const key = [...new Set(ids)].sort();
+  return useQuery({
+    queryKey: ["chat-products", key],
+    enabled: key.length > 0,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase.from("products").select(PRODUCT_COLS).in("id", key);
+      return new Map(((data ?? []) as TagProduct[]).map((p) => [p.id, p]));
+    },
+  });
+}
+
+function ghs(n: number) {
+  return `GH₵ ${Number(n).toLocaleString("en-GH", { maximumFractionDigits: 2 })}`;
+}
+
+function ProductChip({ p, mine, compact }: { p: TagProduct | undefined; mine?: boolean; compact?: boolean }) {
+  if (!p) {
+    return <div className={cn("mb-1 rounded-xl px-3 py-2 text-xs", mine ? "bg-primary-foreground/15" : "bg-muted")}>Product no longer available</div>;
+  }
+  const inner = (
+    <div className={cn("flex items-center gap-2.5 rounded-xl p-1.5 pr-3 text-left", mine ? "bg-primary-foreground/15" : "border border-border bg-muted/60", !compact && "mb-1")}>
+      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-background">
+        {p.image_url && <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" loading="lazy" />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-2 text-[13px] font-semibold leading-tight">{p.name}</p>
+        <p className="mt-0.5 text-sm font-extrabold">
+          {ghs(p.price)}
+          {p.old_price && p.old_price > p.price && <span className="ml-1.5 text-[11px] font-normal line-through opacity-70">{ghs(p.old_price)}</span>}
+        </p>
+        <p className="text-[10px] font-semibold opacity-80">{p.stock > 0 ? (p.stock <= 5 ? `Only ${p.stock} left` : "In stock") : "Sold out"}</p>
+      </div>
+    </div>
+  );
+  if (compact) return inner;
+  return <Link to="/products/$id" params={{ id: p.id }} className="block">{inner}</Link>;
+}
+
+function ProductPicker({ open, onClose, sellerId, onPick }: { open: boolean; onClose: () => void; sellerId: string; onPick: (p: TagProduct) => void }) {
+  const [q, setQ] = useState("");
+  const { data, isLoading } = useQuery({
+    queryKey: ["chat-picker", sellerId],
+    enabled: open,
+    queryFn: async () => {
+      const { data } = await supabase.from("products").select(PRODUCT_COLS).eq("seller_id", sellerId).eq("approval_status", "approved").order("created_at", { ascending: false }).limit(100);
+      return (data ?? []) as TagProduct[];
+    },
+  });
+  if (!open) return null;
+  const list = (data ?? []).filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase()));
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col bg-black/50" onClick={onClose}>
+      <div className="mt-auto flex max-h-[80dvh] flex-col rounded-t-3xl bg-card shadow-elevated md:mx-auto md:mt-20 md:w-full md:max-w-md md:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div>
+            <h2 className="text-base font-bold text-foreground">Tag a product</h2>
+            <p className="text-[11px] text-muted-foreground">Show exactly which item you mean</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full p-2 text-muted-foreground hover:bg-muted" aria-label="Close"><X size={18} /></button>
+        </div>
+        <div className="px-4 pt-3">
+          <label className="flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2">
+            <Search size={16} className="text-muted-foreground" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search this shop's products" className="flex-1 bg-transparent text-sm text-foreground outline-none" />
+          </label>
+        </div>
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-4">
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />)
+          ) : list.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">No products found</p>
+          ) : (
+            list.map((p) => (
+              <button key={p.id} type="button" onClick={() => { onPick(p); onClose(); }} className="block w-full text-foreground active:scale-[0.99]">
+                <ProductChip p={p} compact />
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SafetyNote() {
+  return (
+    <div className="mx-auto my-2 flex max-w-md items-start gap-2 rounded-xl border border-success/30 bg-success/10 px-3 py-2 text-[11px] text-foreground">
+      <ShieldCheck size={16} className="mt-0.5 shrink-0 text-success" />
+      <span><b>Chat safely on Kivora.</b> Pay on delivery and keep your chat here — your messages help us protect you if anything goes wrong. Never send MoMo before you receive your item.</span>
+    </div>
+  );
+}
+
 export function ChatThread({
   conversation,
   userId,
@@ -257,6 +357,9 @@ export function ChatThread({
   );
 
   const [text, setText] = useState("");
+  const [tagged, setTagged] = useState<TagProduct | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [verified, setVerified] = useState(false);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
   const byId = useMemo(() => new Map((messages ?? []).map((m) => [m.id, m])), [messages]);
@@ -368,6 +471,23 @@ export function ChatThread({
   };
 
   const groups = useMemo(() => groupByDay(messages ?? []), [messages]);
+  const taggedIds = useMemo(() => {
+    const ids = (messages ?? []).map((m) => parseProductTag(m.body).productId).filter(Boolean) as string[];
+    if (conversation.product_id) ids.push(conversation.product_id);
+    return ids;
+  }, [messages, conversation.product_id]);
+  const { data: productMap } = useTaggedProducts(taggedIds);
+  const contextProduct = conversation.product_id ? productMap?.get(conversation.product_id) : undefined;
+
+  useEffect(() => {
+    let off = false;
+    (async () => {
+      const { data } = await supabase.rpc("public_seller_badge", { _seller_id: conversation.seller_id });
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!off) setVerified(!!row?.verified);
+    })();
+    return () => { off = true; };
+  }, [conversation.seller_id]);
 
   const statusLine = partner.typing
     ? "typing…"
@@ -378,14 +498,15 @@ export function ChatThread({
   const displayName = conversation.other_name || conversation.other_shop || "Kivora user";
 
   const submit = () => {
-    if (!text.trim() || send.isPending) return;
+    if ((!text.trim() && !tagged) || send.isPending) return;
     notifyStoppedTyping();
     send.mutate(
-      { body: text, senderId: userId, replyToId: replyTo?.id ?? null },
+      { body: tagged ? encodeProductTag(tagged.id, text) : text, senderId: userId, replyToId: replyTo?.id ?? null },
       {
         onSuccess: () => {
           setText("");
           setReplyTo(null);
+          setTagged(null);
           if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
           }
@@ -443,6 +564,7 @@ export function ChatThread({
           <div className="min-w-0 flex-1">
             <p className="truncate text-[15px] font-bold leading-tight text-foreground">
               {displayName}
+              {otherIsSeller && verified && <BadgeCheck size={15} className="ml-1 inline -mt-0.5 text-primary" aria-label="Verified seller" />}
             </p>
             <p
               className={cn(
@@ -465,6 +587,15 @@ export function ChatThread({
           </div>
         </button>
       </header>
+      {contextProduct && (
+        <div className="shrink-0 border-b border-border bg-card px-3 py-2">
+          <div className="mx-auto flex max-w-3xl items-center gap-2">
+            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">About</span>
+            <div className="min-w-0 flex-1 text-foreground"><ProductChip p={contextProduct} compact /></div>
+            <Link to="/products/$id" params={{ id: contextProduct.id }} className="shrink-0 rounded-full gradient-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">View</Link>
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div
@@ -478,6 +609,7 @@ export function ChatThread({
           WebkitOverflowScrolling: "touch",
         }}
       >
+        <SafetyNote />
         {isLoading ? (
           <div className="space-y-2 pt-4">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -557,11 +689,24 @@ export function ChatThread({
                             )}
                           >
                             <span className="block font-bold">{q ? nameOf(q) : "Message"}</span>
-                            <span className="line-clamp-2 opacity-80">{q ? q.body : "Original message unavailable"}</span>
+                            <span className="line-clamp-2 opacity-80">{q ? parseProductTag(q.body).text || "🏷️ Product" : "Original message unavailable"}</span>
                           </button>
                         );
                       })()}
-                      <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                      {(() => {
+                        const { productId, text: t } = parseProductTag(m.body);
+                        return (
+                          <>
+                            {productId && <ProductChip p={productMap?.get(productId)} mine={mine} />}
+                            {t && <p className="whitespace-pre-wrap break-words">{t}</p>}
+                            {!mine && t && looksRisky(t) && (
+                              <p className="mt-1 flex items-start gap-1 rounded-md bg-flash/10 px-2 py-1 text-[11px] font-semibold text-flash">
+                                <AlertTriangle size={12} className="mt-0.5 shrink-0" /> Careful: don't pay before delivery. Use Pay on Delivery on Kivora.
+                              </p>
+                            )}
+                          </>
+                        );
+                      })()}
                       <div
                         className={cn(
                           "mt-0.5 flex items-center justify-end gap-1 text-[10px]",
@@ -637,14 +782,20 @@ export function ChatThread({
           <div className="mx-auto mb-2 flex max-w-3xl items-start gap-2 rounded-lg border-l-4 border-primary bg-muted px-3 py-2">
             <div className="min-w-0 flex-1 text-xs">
               <p className="font-bold text-primary">Replying to {nameOf(replyTo)}</p>
-              <p className="truncate text-muted-foreground">{replyTo.body}</p>
+              <p className="truncate text-muted-foreground">{parseProductTag(replyTo.body).text || "🏷️ Product"}</p>
             </div>
             <button type="button" onClick={() => setReplyTo(null)} aria-label="Cancel reply" className="rounded-full p-1 text-muted-foreground hover:bg-background">
               <X size={16} />
             </button>
           </div>
         )}
-        {!text.trim() && !replyTo && (
+        {tagged && (
+          <div className="mx-auto mb-2 flex max-w-3xl items-center gap-2">
+            <div className="min-w-0 flex-1 text-foreground"><ProductChip p={tagged} compact /></div>
+            <button type="button" onClick={() => setTagged(null)} aria-label="Remove tagged product" className="rounded-full p-1.5 text-muted-foreground hover:bg-muted"><X size={16} /></button>
+          </div>
+        )}
+        {!text.trim() && !replyTo && !tagged && (
           <div className="mx-auto mb-2 flex max-w-3xl gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
             {(otherIsSeller
               ? ["Is this still available?", "What's the last price?", "Do you deliver to my area?", "When can I get it?"]
@@ -657,6 +808,15 @@ export function ChatThread({
           </div>
         )}
         <div className="mx-auto flex max-w-3xl items-end gap-2">
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-primary/30 bg-primary/10 text-primary active:scale-95"
+            aria-label="Tag a product"
+            title="Tag a product"
+          >
+            <Tag size={18} />
+          </button>
           <textarea
             ref={textareaRef}
             value={text}
@@ -680,13 +840,13 @@ export function ChatThread({
               }
             }}
             rows={1}
-            placeholder="Type a message"
+            placeholder={tagged ? "Ask about this product…" : "Type a message"}
             className="max-h-28 min-h-[44px] flex-1 resize-none rounded-3xl border border-border bg-background px-4 py-2.5 text-[15px] text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
           />
           <button
             type="button"
             onClick={submit}
-            disabled={!text.trim() || send.isPending}
+            disabled={(!text.trim() && !tagged) || send.isPending}
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full gradient-primary text-primary-foreground shadow-md transition active:scale-95 disabled:opacity-40"
             aria-label="Send"
           >
@@ -694,10 +854,11 @@ export function ChatThread({
           </button>
         </div>
         <p className="mx-auto mt-1 max-w-3xl px-1 text-[10px] text-muted-foreground">
-          Enter to send · Shift+Enter for new line
+          Tap 🏷️ to tag a product · Enter to send
         </p>
       </div>
 
+      <ProductPicker open={pickerOpen} onClose={() => setPickerOpen(false)} sellerId={conversation.seller_id} onPick={setTagged} />
       <ChatProfileSheet
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
