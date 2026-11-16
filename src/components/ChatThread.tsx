@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, CheckCheck, SendHorizonal, X, Store, User, ChevronDown, Reply, Tag, ShieldCheck, BadgeCheck, AlertTriangle, Search } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, SendHorizonal, X, Store, User, ChevronDown, Reply, Tag, ShieldCheck, BadgeCheck, AlertTriangle, Search, MoreVertical, Flag, Ban, ShoppingBag } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { encodeProductTag, parseProductTag, looksRisky } from "@/lib/chat-product";
+import { encodeProductTag, parseProductTag, looksRisky, encodeOrderCard, parseOrderCard, type ChatOrder } from "@/lib/chat-product";
+import { ReportDialog, OrderBuilder, OrderCard } from "@/components/ChatSafety";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
@@ -360,6 +362,42 @@ export function ChatThread({
   const [text, setText] = useState("");
   const [tagged, setTagged] = useState<TagProduct | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [report, setReport] = useState<{ id: string | null; preview: string | null } | null>(null);
+  const [orderOpen, setOrderOpen] = useState(false);
+  const qc = useQueryClient();
+  const blocksKey = ["chat-blocks", userId, otherUserId];
+  const { data: blocks } = useQuery({
+    queryKey: blocksKey,
+    queryFn: async () => {
+      const { data } = await supabase.from("chat_blocks").select("blocker_id, blocked_id")
+        .or(`and(blocker_id.eq.${userId},blocked_id.eq.${otherUserId}),and(blocker_id.eq.${otherUserId},blocked_id.eq.${userId})`);
+      const rows = data ?? [];
+      return { iBlocked: rows.some((b) => b.blocker_id === userId), blockedMe: rows.some((b) => b.blocker_id === otherUserId) };
+    },
+  });
+  const iBlocked = !!blocks?.iBlocked;
+  const isBlocked = iBlocked || !!blocks?.blockedMe;
+  const toggleBlock = async () => {
+    setMenuOpen(false);
+    if (iBlocked) {
+      const { error } = await supabase.from("chat_blocks").delete().eq("blocker_id", userId).eq("blocked_id", otherUserId);
+      if (error) return toast.error("Couldn't unblock");
+      toast.success("Unblocked");
+    } else {
+      if (!window.confirm("Block this person? Neither of you will be able to send messages in this chat.")) return;
+      const { error } = await supabase.from("chat_blocks").insert({ blocker_id: userId, blocked_id: otherUserId });
+      if (error) return toast.error("Couldn't block");
+      toast.success("Blocked. You won't get messages from them.");
+    }
+    void qc.invalidateQueries({ queryKey: blocksKey });
+  };
+  const sendOrder = (o: ChatOrder) => {
+    send.mutate({ body: encodeOrderCard(o), senderId: userId, replyToId: null }, {
+      onSuccess: () => requestAnimationFrame(() => scrollToBottom(true)),
+      onError: () => toast.error("Couldn't send order"),
+    });
+  };
   const [verified, setVerified] = useState(false);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
@@ -592,6 +630,18 @@ export function ChatThread({
             </p>
           </div>
         </button>
+        <div className="relative shrink-0">
+          <button type="button" onClick={() => setMenuOpen((v) => !v)} aria-label="Chat options" className="rounded-full p-2.5 text-foreground active:bg-muted hover:bg-muted"><MoreVertical size={20} /></button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-11 z-40 w-52 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-elevated">
+                <button type="button" onClick={() => { setMenuOpen(false); setReport({ id: null, preview: null }); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-foreground hover:bg-muted"><Flag size={16} className="text-flash" /> Report chat</button>
+                <button type="button" onClick={toggleBlock} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-flash hover:bg-muted"><Ban size={16} /> {iBlocked ? "Unblock" : "Block"} {displayName}</button>
+              </div>
+            </>
+          )}
+        </div>
       </header>
       {contextProduct && (
         <div className="shrink-0 border-b border-border bg-card px-3 py-2">
@@ -700,9 +750,13 @@ export function ChatThread({
                         );
                       })()}
                       {(() => {
-                        const { productId, text: t } = parseProductTag(m.body);
+                        const oc = parseOrderCard(m.body);
+                        const { productId, text: t } = parseProductTag(oc.text);
                         return (
                           <>
+                            {oc.order && (
+                              <OrderCard order={oc.order} mine={mine} isBuyer={isCustomer} onConfirmed={() => send.mutate({ body: "✅ I'm confirming this order — checking out with Pay on Delivery.", senderId: userId, replyToId: m.id })} />
+                            )}
                             {productId && <ProductChip p={productMap?.get(productId)} mine={mine} />}
                             {t && <p className="whitespace-pre-wrap break-words">{t}</p>}
                             {!mine && t && looksRisky(t) && (
@@ -745,6 +799,16 @@ export function ChatThread({
                     >
                       <Reply size={16} />
                     </button>
+                    {!mine && (
+                      <button
+                        type="button"
+                        onClick={() => setReport({ id: m.id, preview: parseProductTag(parseOrderCard(m.body).text).text || "Product / order" })}
+                        aria-label="Report this message"
+                        className="shrink-0 rounded-full p-1.5 text-muted-foreground opacity-60 hover:bg-muted hover:text-flash hover:opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                      >
+                        <Flag size={14} />
+                      </button>
+                    )}
                   </div>
                   {mine && m.id === lastMineId && (
                     <p className="mr-1 mt-0.5 text-right text-[11px] font-medium text-muted-foreground" aria-live="polite">
@@ -796,6 +860,13 @@ export function ChatThread({
             : "max(0.5rem, env(safe-area-inset-bottom))",
         }}
       >
+        {isBlocked ? (
+          <div className="mx-auto flex max-w-3xl items-center gap-3 rounded-2xl bg-muted px-4 py-3 text-sm text-foreground">
+            <Ban size={18} className="shrink-0 text-flash" />
+            <span className="flex-1">{iBlocked ? "You blocked this contact. They can't message you." : "You can't reply to this chat."}</span>
+            {iBlocked && <button type="button" onClick={toggleBlock} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-bold text-primary">Unblock</button>}
+          </div>
+        ) : (<>
         {replyTo && (
           <div className="mx-auto mb-2 flex max-w-3xl items-start gap-2 rounded-lg border-l-4 border-primary bg-muted px-3 py-2">
             <div className="min-w-0 flex-1 text-xs">
@@ -826,6 +897,11 @@ export function ChatThread({
           </div>
         )}
         <div className="mx-auto flex max-w-3xl items-end gap-2">
+          {!isCustomer && (
+            <button type="button" onClick={() => setOrderOpen(true)} className="grid h-11 w-11 shrink-0 place-items-center rounded-full gradient-primary text-primary-foreground active:scale-95" aria-label="Send an order" title="Send an order">
+              <ShoppingBag size={18} />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
@@ -872,10 +948,13 @@ export function ChatThread({
           </button>
         </div>
         <p className="mx-auto mt-1 max-w-3xl px-1 text-[10px] text-muted-foreground">
-          Tap 🏷️ to tag a product · Enter to send
+          {isCustomer ? "Tap 🏷️ to tag a product" : "🛍️ Send an order · 🏷️ Tag a product"} · Enter to send
         </p>
+        </>)}
       </div>
 
+      <OrderBuilder open={orderOpen} onClose={() => setOrderOpen(false)} sellerId={conversation.seller_id} onSend={sendOrder} />
+      <ReportDialog open={!!report} onClose={() => setReport(null)} conversationId={conversation.id} reporterId={userId} reportedId={otherUserId} messageId={report?.id} messagePreview={report?.preview} />
       <ProductPicker open={pickerOpen} onClose={() => setPickerOpen(false)} sellerId={conversation.seller_id} onPick={setTagged} />
       <ChatProfileSheet
         open={profileOpen}
