@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
+import { Truck, Wallet, PackageSearch, ShoppingBag, MessageCircle, X, ChevronRight } from "lucide-react";
 
 // Kivora customer care WhatsApp number (international format, digits only).
 export const SUPPORT_WHATSAPP = "233257573471";
@@ -15,32 +17,65 @@ function WaIcon({ className = "" }: { className?: string }) {
 
 export function WhatsAppSupport() {
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const [open, setOpen] = useState(false);
+  useEffect(() => setOpen(false), [path]);
   if (HIDDEN.some((p) => path.startsWith(p))) return null;
   const onProduct = path.startsWith("/products/");
-  const text = encodeURIComponent(`Hi Kivora, I need help${onProduct ? ` with this item: https://kivoragh.shop${path}` : ""}`);
-  // Sit above the phone tab bar, and above the sticky buy bar on product pages.
+  const page = `https://kivoragh.shop${path}`;
+  const topics = [
+    ...(onProduct ? [{ icon: ShoppingBag, title: "This product", sub: "Ask about size, stock or quality", msg: `Hi Kivora, I have a question about this product: ${page}` }] : []),
+    { icon: Truck, title: "Delivery", sub: "Fees, timing & Pay on Delivery areas", msg: "Hi Kivora Care, I have a question about delivery to my area.\nMy region/town: " },
+    { icon: Wallet, title: "Payment", sub: "Pay on Delivery & Mobile Money", msg: "Hi Kivora Care, I need help with payment for my order." },
+    { icon: PackageSearch, title: "Track my order", sub: "Dispatch status & delivery update", msg: "Hi Kivora Care, I want to track my order.\nOrder number: " },
+    { icon: MessageCircle, title: "Something else", sub: "Chat with customer care", msg: `Hi Kivora, I need some help.${onProduct ? "" : `\n(Page: ${page})`}` },
+  ];
   const pos = onProduct
     ? "bottom-[calc(160px+env(safe-area-inset-bottom))] lg:bottom-6"
     : "bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6";
   return (
-    <a
-      href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${text}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="Chat with Kivora support on WhatsApp"
-      className={`group fixed right-3 md:right-6 ${pos} z-40 print:hidden`}
-    >
-      <span className="relative flex items-center gap-3 rounded-full bg-success text-success-foreground shadow-elevated ring-4 ring-success/20 transition-transform active:scale-95 md:hover:-translate-y-0.5 h-14 w-14 justify-center md:h-auto md:w-auto md:justify-start md:py-2 md:pl-2 md:pr-5">
-        <span className="absolute inset-0 rounded-full bg-success/40 animate-ping [animation-duration:2.5s] md:hidden" />
-        <span className="relative grid h-14 w-14 place-items-center md:h-11 md:w-11 md:rounded-full md:bg-success-foreground/15">
-          <WaIcon className="h-8 w-8 md:h-6 md:w-6" />
-          <span className="absolute right-1.5 top-1.5 h-3 w-3 rounded-full border-2 border-success bg-success-foreground md:right-0 md:top-0" />
-        </span>
-        <span className="relative hidden flex-col leading-tight md:flex">
-          <span className="text-sm font-extrabold">Need help?</span>
-          <span className="text-[11px] font-medium opacity-90">Chat with us · 025 757 3471</span>
-        </span>
-      </span>
-    </a>
+    <>
+      {open && <div className="fixed inset-0 z-40 bg-foreground/30 md:bg-transparent print:hidden" onClick={() => setOpen(false)} />}
+      <div className={`fixed right-3 md:right-6 ${pos} z-50 flex flex-col items-end gap-3 print:hidden`}>
+        {open && (
+          <div role="dialog" aria-label="Quick help" className="w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-elevated animate-in fade-in slide-in-from-bottom-2">
+            <div className="flex items-start gap-3 bg-success p-4 text-success-foreground">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-success-foreground/15"><WaIcon className="h-6 w-6" /></span>
+              <div className="min-w-0 flex-1">
+                <p className="font-extrabold leading-tight">Kivora Support</p>
+                <p className="text-xs opacity-90">● Usually replies in minutes</p>
+              </div>
+              <button onClick={() => setOpen(false)} aria-label="Close" className="rounded-full p-1 hover:bg-success-foreground/15"><X size={18} /></button>
+            </div>
+            <p className="px-4 pt-3 text-sm font-semibold">What do you need help with?</p>
+            <ul className="p-2">
+              {topics.map((t) => (
+                <li key={t.title}>
+                  <a href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(t.msg)}`} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-muted active:bg-muted">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><t.icon size={20} /></span>
+                    <span className="min-w-0 flex-1"><span className="block text-sm font-bold">{t.title}</span><span className="block truncate text-xs text-muted-foreground">{t.sub}</span></span>
+                    <ChevronRight size={16} className="text-muted-foreground" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p className="border-t border-border px-4 py-2 text-center text-[11px] text-muted-foreground">Opens WhatsApp · 025 757 3471</p>
+          </div>
+        )}
+        <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="Get help from Kivora support" className="group">
+          <span className="relative flex items-center gap-3 rounded-full bg-success text-success-foreground shadow-elevated ring-4 ring-success/20 transition-transform active:scale-95 md:hover:-translate-y-0.5 h-14 w-14 justify-center md:h-auto md:w-auto md:justify-start md:py-2 md:pl-2 md:pr-5">
+            {!open && <span className="absolute inset-0 rounded-full bg-success/40 animate-ping [animation-duration:2.5s] md:hidden" />}
+            <span className="relative grid h-14 w-14 place-items-center md:h-11 md:w-11 md:rounded-full md:bg-success-foreground/15">
+              {open ? <X className="h-7 w-7 md:h-6 md:w-6" /> : <WaIcon className="h-8 w-8 md:h-6 md:w-6" />}
+              {!open && <span className="absolute right-1.5 top-1.5 h-3 w-3 rounded-full border-2 border-success bg-success-foreground md:right-0 md:top-0" />}
+            </span>
+            <span className="relative hidden flex-col text-left leading-tight md:flex">
+              <span className="text-sm font-extrabold">Need help?</span>
+              <span className="text-[11px] font-medium opacity-90">Chat with us · 025 757 3471</span>
+            </span>
+          </span>
+        </button>
+      </div>
+    </>
   );
 }
