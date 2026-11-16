@@ -55,7 +55,8 @@ function MessageTicks({
   if (read) {
     return (
       <CheckCheck
-        size={14}
+        size={16}
+        strokeWidth={2.75}
         className={cn("shrink-0", onPrimary ? "text-sky-200" : "text-sky-500")}
         aria-label="Read"
       />
@@ -471,6 +472,11 @@ export function ChatThread({
   };
 
   const groups = useMemo(() => groupByDay(messages ?? []), [messages]);
+  const lastMineId = useMemo(() => {
+    const list = messages ?? [];
+    for (let i = list.length - 1; i >= 0; i--) if (list[i].sender_id === userId) return list[i].id;
+    return null;
+  }, [messages, userId]);
   const taggedIds = useMemo(() => {
     const ids = (messages ?? []).map((m) => parseProductTag(m.body).productId).filter(Boolean) as string[];
     if (conversation.product_id) ids.push(conversation.product_id);
@@ -652,8 +658,8 @@ export function ChatThread({
                 const sameAsPrev = prev && prev.sender_id === m.sender_id;
                 const sameAsNext = next && next.sender_id === m.sender_id;
                 return (
+                  <div key={m.id}>
                   <div
-                    key={m.id}
                     id={`msg-${m.id}`}
                     className={cn(
                       "group flex items-center gap-1 rounded-lg transition-colors",
@@ -739,6 +745,18 @@ export function ChatThread({
                     >
                       <Reply size={16} />
                     </button>
+                  </div>
+                  {mine && m.id === lastMineId && (
+                    <p className="mr-1 mt-0.5 text-right text-[11px] font-medium text-muted-foreground" aria-live="polite">
+                      {m.read ? (
+                        <span className="font-semibold text-sky-500">✓✓ Seen</span>
+                      ) : m.delivered ? (
+                        "✓✓ Delivered"
+                      ) : (
+                        "✓ Sent"
+                      )}
+                    </p>
+                  )}
                   </div>
                 );
               })}
