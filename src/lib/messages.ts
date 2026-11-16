@@ -43,15 +43,22 @@ export async function startConversation(input: {
 }) {
   const { customerId, sellerId, productId = null, orderId = null } = input;
 
-  let query = supabase
+  // One continuous thread per buyer–seller pair; reuse the oldest existing chat.
+  const { data: existing } = await supabase
     .from("conversations")
-    .select("id")
+    .select("id, product_id")
     .eq("customer_id", customerId)
-    .eq("seller_id", sellerId);
-  query = productId ? query.eq("product_id", productId) : query.is("product_id", null);
-  query = orderId ? query.eq("order_id", orderId) : query.is("order_id", null);
-  const { data: existing } = await query.maybeSingle();
-  if (existing) return existing.id;
+    .eq("seller_id", sellerId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (existing) {
+    // Point the chat at the product the buyer is now asking about.
+    if (productId && existing.product_id !== productId) {
+      await supabase.from("conversations").update({ product_id: productId }).eq("id", existing.id);
+    }
+    return existing.id;
+  }
 
   const { data, error } = await supabase
     .from("conversations")
