@@ -194,40 +194,6 @@ function Home() {
         </Link>
       </div>
 
-      {/* CATEGORY SQUIRCLE GRID */}
-      {categories.length > 0 && (
-        <section className="mx-3 mt-6 rounded-3xl bg-card p-3 shadow-soft ring-1 ring-border/60 md:mx-4 md:p-5">
-          <div className="mb-3 flex items-center justify-between gap-3 px-1">
-            <h2 className="flex items-center gap-1.5 text-lg font-black tracking-tight text-foreground md:text-2xl">
-              <Sparkles size={18} className="text-primary" /> Shop by category
-            </h2>
-            <SeeAll />
-          </div>
-          <div className="overflow-x-auto scrollbar-none md:overflow-visible">
-            <div className="grid grid-flow-col grid-rows-2 auto-cols-[76px] gap-x-2.5 gap-y-3 md:grid-flow-row md:grid-rows-none md:grid-cols-6 lg:grid-cols-8 md:auto-cols-auto">
-              {categories.slice(0, 16).map((c, i) => {
-                const tag = ["HOT", "DEALS", "NEW", "TOP"][i] ;
-                return (
-                  <Link key={c.id} to="/categories" search={{ c: c.name }} className="group flex flex-col items-center gap-1.5 text-center">
-                    <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-gradient-to-br from-primary-soft to-muted shadow-soft ring-1 ring-border/50 transition group-hover:-translate-y-0.5 group-hover:shadow-elevated">
-                      {c.image_url ? (
-                        <img src={c.image_url} alt={c.name} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-110" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center"><PackageOpen size={24} className="text-primary" /></div>
-                      )}
-                      {tag && (
-                        <span className={`absolute left-0 top-0 rounded-br-xl px-1.5 py-0.5 text-[8px] font-black tracking-wide ${i % 2 === 0 ? "bg-flash text-flash-foreground" : "bg-primary text-primary-foreground"}`}>{tag}</span>
-                      )}
-                    </div>
-                    <span className="line-clamp-2 text-[11px] font-bold leading-tight text-foreground md:text-xs">{c.name}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* FLASH SALES */}
       <section id="flash-sales" className="mx-3 mt-7 scroll-mt-20 overflow-hidden rounded-2xl bg-flash shadow-elevated md:mx-4">
         <div className="flex items-center justify-between gap-3 px-3 py-3 text-flash-foreground">
