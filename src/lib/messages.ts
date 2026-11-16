@@ -129,7 +129,14 @@ export function useConversations(userId: string | undefined) {
         }
       }
 
-      return convos.map((c) => {
+      // Safety net: show at most one row per person, even if old duplicates exist.
+      const seen = new Set<string>();
+      return convos.filter((c) => {
+        const other = isCustomer(c) ? c.seller_id : c.customer_id;
+        if (seen.has(other)) return false;
+        seen.add(other);
+        return true;
+      }).map((c) => {
         const other = isCustomer(c) ? c.seller_id : c.customer_id;
         return {
           ...c,
