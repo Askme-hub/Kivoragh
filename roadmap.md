@@ -1,7 +1,7 @@
 # Bold marketplace restyle (page by page)
 
 - [x] Home, header, categories
-- [ ] Product page
+- [x] Product page
 - [ ] Cart
 - [ ] Checkout
 - [ ] Categories & search results
