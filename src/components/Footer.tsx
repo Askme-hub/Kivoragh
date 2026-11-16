@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Facebook, Instagram, Twitter, Youtube, Phone, Mail, MapPin, Download, Smartphone } from "lucide-react";
+import { Facebook, Instagram, Twitter, Youtube, Phone, Mail, MapPin, Download, Smartphone, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import kivoraIcon from "@/assets/kivora-icon.png";
 import { useInstallPrompt, setInstallSheetOpen } from "@/lib/pwa";
@@ -108,6 +108,16 @@ export function Footer() {
     }
     // Opens the existing install sheet (handles Android prompt + iOS instructions)
     setInstallSheetOpen(true);
+  };
+
+  const handleShare = async () => {
+    const url = "https://kivoragh.shop";
+    const data = { title: "Kivora", text: "Shop on Kivora — Ghana's marketplace. Pay on delivery!", url };
+    try {
+      if (navigator.share) { await navigator.share(data); return; }
+      await navigator.clipboard.writeText(`${data.text} ${url}`);
+      toast.success("Link copied — paste it to share Kivora");
+    } catch { /* user cancelled */ }
   };
 
   return (
@@ -219,18 +229,24 @@ export function Footer() {
                 <AppStoreBadge className="h-11 w-auto" />
               </button>
 
-              {/* PWA install — works now */}
+              {!installed && (
+                <button
+                  type="button"
+                  onClick={handlePwaInstall}
+                  className="inline-flex h-11 items-center gap-2 rounded-lg border border-border bg-background px-4 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5 active:scale-[0.98]"
+                >
+                  <Download className="h-4 w-4 text-primary" />
+                  {available || isIOS ? "Install free app" : "Install web app"}
+                </button>
+              )}
+
               <button
                 type="button"
-                onClick={handlePwaInstall}
-                className="inline-flex h-11 items-center gap-2 rounded-lg border border-border bg-background px-4 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5 active:scale-[0.98]"
+                onClick={handleShare}
+                className="btn-hot inline-flex h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold"
               >
-                <Download className="h-4 w-4 text-primary" />
-                {installed
-                  ? "App installed"
-                  : available || isIOS
-                    ? "Install free app"
-                    : "Install web app"}
+                <Share2 className="h-4 w-4" />
+                Share app
               </button>
             </div>
           </div>

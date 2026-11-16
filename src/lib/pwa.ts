@@ -53,11 +53,14 @@ export function useInstallPrompt() {
     const standalone =
       window.matchMedia?.("(display-mode: standalone)")?.matches ||
       (window.navigator as any).standalone === true;
-    setInstalled(!!standalone);
+    setInstalled(!!standalone || localStorage.getItem("kivora_pwa_installed") === "1");
     setIsIOS(/iphone|ipad|ipod/i.test(window.navigator.userAgent) && !standalone);
 
     const onPrompt = (e: Event) => {
       e.preventDefault();
+      // Browser offers install again, so the app was uninstalled
+      localStorage.removeItem("kivora_pwa_installed");
+      setInstalled(false);
       deferred = e as BeforeInstallPromptEvent;
       setAvailable(true);
     };
@@ -65,6 +68,7 @@ export function useInstallPrompt() {
       deferred = null;
       setAvailable(false);
       setInstalled(true);
+      localStorage.setItem("kivora_pwa_installed", "1");
     };
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
