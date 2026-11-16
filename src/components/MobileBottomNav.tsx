@@ -1,13 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, LayoutGrid, ShoppingCart, UserCircle2 } from "lucide-react";
+import { HomeSolid, GridSolid, CartSolid, UserSolid } from "@/components/icons/SolidIcons";
 import { useEffect, useState } from "react";
 import { useShop } from "@/lib/store";
 
 const tabs = [
-  { to: "/", label: "Home", icon: Home, exact: true },
-  { to: "/categories", label: "Categories", icon: LayoutGrid },
-  { to: "/cart", label: "Cart", icon: ShoppingCart, cart: true },
-  { to: "/account", label: "Account", icon: UserCircle2 },
+  { to: "/", label: "Home", icon: HomeSolid, exact: true },
+  { to: "/categories", label: "Categories", icon: GridSolid },
+  { to: "/cart", label: "Cart", icon: CartSolid, cart: true },
+  { to: "/account", label: "Account", icon: UserSolid },
 ] as const;
 
 /** Jumia-style edge-to-edge 4-tab bar for phones. */
@@ -35,7 +35,7 @@ export function MobileBottomNav() {
             >
               {active && <span className="absolute inset-x-6 top-0 h-0.5 rounded-full bg-primary" />}
               <span className="relative">
-                <Icon size={22} strokeWidth={active ? 2.4 : 1.9} />
+                <Icon size={23} className={active ? "" : "opacity-80"} />
                 {"cart" in t && mounted && count > 0 && (
                   <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
                     {count}

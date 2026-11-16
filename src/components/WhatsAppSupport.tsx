@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import { Truck, Wallet, PackageSearch, ShoppingBag, MessageCircle, X, ChevronRight } from "lucide-react";
+import { X, ChevronRight } from "lucide-react";
+import { TruckSolid as Truck, WalletSolid as Wallet, BoxSearchSolid as PackageSearch, BagSolid as ShoppingBag, ChatSolid as MessageCircle, SupportAgent } from "@/components/icons/SolidIcons";
 
 // Kivora customer care WhatsApp number (international format, digits only).
 export const SUPPORT_WHATSAPP = "233257573471";
@@ -39,7 +40,7 @@ export function WhatsAppSupport() {
         {open && (
           <div role="dialog" aria-label="Quick help" className="w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-elevated animate-in fade-in slide-in-from-bottom-2">
             <div className="flex items-start gap-3 bg-success p-4 text-success-foreground">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-success-foreground/15"><WaIcon className="h-6 w-6" /></span>
+              <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-success-foreground/15"><SupportAgent size={40} /><span className="absolute -bottom-0.5 -right-0.5 grid h-5 w-5 place-items-center rounded-full bg-success-foreground text-success"><WaIcon className="h-3.5 w-3.5" /></span></span>
               <div className="min-w-0 flex-1">
                 <p className="font-extrabold leading-tight">Kivora Support</p>
                 <p className="text-xs opacity-90">● Usually replies in minutes</p>
@@ -52,7 +53,7 @@ export function WhatsAppSupport() {
                 <li key={t.title}>
                   <a href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(t.msg)}`} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}
                     className="flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-muted active:bg-muted">
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><t.icon size={20} /></span>
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><t.icon size={21} /></span>
                     <span className="min-w-0 flex-1"><span className="block text-sm font-bold">{t.title}</span><span className="block truncate text-xs text-muted-foreground">{t.sub}</span></span>
                     <ChevronRight size={16} className="text-muted-foreground" />
                   </a>
@@ -66,8 +67,9 @@ export function WhatsAppSupport() {
           <span className="relative flex items-center gap-3 rounded-full bg-success text-success-foreground shadow-elevated ring-4 ring-success/20 transition-transform active:scale-95 md:hover:-translate-y-0.5 h-14 w-14 justify-center md:h-auto md:w-auto md:justify-start md:py-2 md:pl-2 md:pr-5">
             {!open && <span className="absolute inset-0 rounded-full bg-success/40 animate-ping [animation-duration:2.5s] md:hidden" />}
             <span className="relative grid h-14 w-14 place-items-center md:h-11 md:w-11 md:rounded-full md:bg-success-foreground/15">
-              {open ? <X className="h-7 w-7 md:h-6 md:w-6" /> : <WaIcon className="h-8 w-8 md:h-6 md:w-6" />}
-              {!open && <span className="absolute right-1.5 top-1.5 h-3 w-3 rounded-full border-2 border-success bg-success-foreground md:right-0 md:top-0" />}
+              {open ? <X className="h-7 w-7 md:h-6 md:w-6" /> : <SupportAgent size={44} className="md:h-10 md:w-10" />}
+              {!open && <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full border-2 border-success bg-success-foreground text-success md:h-5 md:w-5"><WaIcon className="h-4 w-4 md:h-3 md:w-3" /></span>}
+              {!open && <span className="absolute right-0.5 top-0.5 h-3 w-3 rounded-full border-2 border-success bg-warning md:right-0 md:top-0" />}
             </span>
             <span className="relative hidden flex-col text-left leading-tight md:flex">
               <span className="text-sm font-extrabold">Need help?</span>
