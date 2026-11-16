@@ -26,6 +26,7 @@ export const Route = createFileRoute("/cart")({
 });
 
 function Cart() {
+  const site = useSiteContent();
   const router = useRouter();
   const cart = useShop((s) => s.cart);
   const updateQty = useShop((s) => s.updateQty);

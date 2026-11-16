@@ -130,6 +130,7 @@ function CategoryBand({
 }
 
 function Home() {
+  const site = useSiteContent();
   const { data: products = [], isLoading } = useProducts();
   const { data: categories = [] } = useCategories();
   const { data: grouped } = useGroupedProducts();

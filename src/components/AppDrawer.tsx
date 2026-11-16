@@ -265,6 +265,7 @@ export function AppDrawer() {
 
 /** Mobile top bar with hamburger + brand + cart + always-visible search pill. */
 export function MobileTopBar() {
+  const site = useSiteContent();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const count = useShop((s) => s.cartCount());
   const openSearch = useSearchUI((s) => s.setOpen);

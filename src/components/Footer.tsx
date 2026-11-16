@@ -94,6 +94,7 @@ function AppStoreBadge({ className }: { className?: string }) {
 }
 
 export function Footer() {
+  const site = useSiteContent();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { available, installed, isIOS } = useInstallPrompt();
 

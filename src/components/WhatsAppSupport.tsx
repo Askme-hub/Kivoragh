@@ -18,6 +18,7 @@ function WaIcon({ className = "" }: { className?: string }) {
 }
 
 export function WhatsAppSupport() {
+  const site = useSiteContent();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [path]);

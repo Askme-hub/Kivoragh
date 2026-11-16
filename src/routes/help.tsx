@@ -17,6 +17,7 @@ export const Route = createFileRoute("/help")({
 });
 
 function HelpCenter() {
+  const site = useSiteContent();
   return (
     <InfoPage
       title="Help Center"
