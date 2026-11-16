@@ -169,6 +169,13 @@
       "when": 1794732557409,
       "tag": "0023_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794835820687,
+      "tag": "0024_chat_blocks_reports",
+      "breakpoints": true
     }
   ]
 }
