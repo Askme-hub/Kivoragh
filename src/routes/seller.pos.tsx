@@ -195,7 +195,7 @@ function DayReport({ shopName, onClose }: { shopName: string; onClose: () => voi
                 ))}
               </ul>
             )}
-            <button type="button" onClick={print} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground">
+            <button type="button" onClick={print} className="mt-5 inline-flex w-full items-center justify-center gap-2 btn-hot py-3 text-sm font-bold ">
               <Printer className="h-4 w-4" /> Print day report
             </button>
           </>

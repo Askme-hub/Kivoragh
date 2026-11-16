@@ -102,7 +102,7 @@ export function CompleteAccountPrompt() {
                   <span>I agree to Kivora's <Link to="/terms" className="font-semibold text-primary">Terms & Conditions</Link> and <Link to="/privacy" className="font-semibold text-primary">Privacy Policy</Link></span>
                 </label>
               )}
-              <button onClick={send} disabled={busy || phone.trim().length < 9 || (needTerms && !agree)} className="rounded-md bg-primary py-3 font-bold text-primary-foreground disabled:opacity-50">
+              <button onClick={send} disabled={busy || phone.trim().length < 9 || (needTerms && !agree)} className="btn-hot py-3 font-bold  disabled:opacity-50">
                 Send code
               </button>
             </>
@@ -110,7 +110,7 @@ export function CompleteAccountPrompt() {
             <>
               <p className="text-center text-sm text-muted-foreground">Enter the 6-digit code sent to {phone}</p>
               <input className={`${input} text-center text-2xl tracking-[0.5em]`} inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} autoFocus />
-              <button onClick={verify} disabled={busy || code.length !== 6} className="rounded-md bg-primary py-3 font-bold text-primary-foreground disabled:opacity-50">
+              <button onClick={verify} disabled={busy || code.length !== 6} className="btn-hot py-3 font-bold  disabled:opacity-50">
                 Verify
               </button>
               <button onClick={send} disabled={count > 0 || busy} className="text-sm font-semibold text-primary disabled:text-muted-foreground">

@@ -67,7 +67,7 @@ export function InstalledNotificationPrompt() {
           <SheetDescription className="mt-1 text-sm text-muted-foreground">
             Get instant alerts when your order is confirmed, shipped or delivered, and when a seller replies.
           </SheetDescription>
-          <button onClick={allow} className="mt-5 w-full rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground active:scale-[0.98]">
+          <button onClick={allow} className="mt-5 w-full btn-hot py-3.5 text-sm font-bold  active:scale-[0.98]">
             Allow notifications
           </button>
           <button onClick={dismiss} className="mt-2 w-full py-2 text-sm font-medium text-muted-foreground">Not now</button>
@@ -141,7 +141,7 @@ export function InstallSheet() {
         </div>
 
         {available ? (
-          <button onClick={install} className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground active:scale-[0.98]">
+          <button onClick={install} className="mt-6 flex w-full items-center justify-center gap-2 btn-hot py-3.5 text-sm font-bold  active:scale-[0.98]">
             <Download size={18} /> Install — it's free
           </button>
         ) : null}
