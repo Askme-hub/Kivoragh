@@ -9,6 +9,29 @@ export type OnlineOrderInput = {
 };
 
 export async function createPendingOnlineOrder(userId: string, data: OnlineOrderInput) {
+    // Re-price every item from the database (never trust client prices)
+    if (data.items.some((i) => !i.product_id)) throw new Error("Invalid cart item");
+    const { data: dbProds } = await supabaseAdmin
+      .from("products").select("id, name, price, old_price, image_url, stock, approval_status")
+      .in("id", data.items.map((i) => i.product_id!));
+    const pmap = new Map((dbProds ?? []).map((p) => [p.id, p]));
+    const { data: flash } = await supabaseAdmin
+      .from("flash_sale_items").select("product_id, sale_price, flash_sales!inner(active, starts_at, ends_at)")
+      .in("product_id", data.items.map((i) => i.product_id!));
+    const now = Date.now();
+    const flashPrice = new Map<string, number>();
+    for (const f of (flash ?? []) as any[]) {
+      const fs = f.flash_sales;
+      if (fs?.active && new Date(fs.starts_at).getTime() <= now && new Date(fs.ends_at).getTime() > now)
+        flashPrice.set(f.product_id, Number(f.sale_price));
+    }
+    data = { ...data, items: data.items.map((i) => {
+      const p = pmap.get(i.product_id!);
+      if (!p || p.approval_status !== "approved") throw new Error(`${i.name} is no longer available`);
+      if (p.stock < i.qty) throw new Error(`Only ${p.stock} unit(s) left for ${p.name}`);
+      return { ...i, name: p.name, price: flashPrice.get(p.id) ?? Number(p.price), old_price: p.old_price, image_url: p.image_url };
+    }) };
+
     // server-side total (don't trust client)
     const itemsTotal = data.items.reduce((a, i) => a + i.price * i.qty, 0);
     const itemCount = data.items.reduce((a, i) => a + i.qty, 0);
