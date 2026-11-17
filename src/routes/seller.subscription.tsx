@@ -7,7 +7,9 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   getPlan, subscriptionState, usePlans, useSellerProductCount, useSellerSubscription, useSubscriptionPayments, type PlanId,
 } from "@/lib/subscriptions";
-import { initiateSubscriptionCheckout } from "@/lib/subscriptions.functions";
+import { startSubscriptionMomo, checkSubscriptionMomo } from "@/lib/subscriptions.functions";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useQueryClient } from "@tanstack/react-query";
 import { sendMarketingCampaign } from "@/lib/sms.functions";
 
 export const Route = createFileRoute("/seller/subscription")({
@@ -23,7 +25,6 @@ function SubscriptionPage() {
   const { data: plans = [] } = usePlans();
   const { data: productCount = 0 } = useSellerProductCount(user);
   const { data: payments = [] } = useSubscriptionPayments(user);
-  const checkout = useServerFn(initiateSubscriptionCheckout);
   const [busy, setBusy] = useState<PlanId | null>(null);
 
   const st = subscriptionState(sub);
@@ -33,22 +34,16 @@ function SubscriptionPage() {
   const usedPct = limit ? Math.min(100, Math.round((productCount / Math.max(limit, 1)) * 100)) : 0;
   const expiringSoon = activePlanId !== "free" && st.daysLeft != null && st.daysLeft <= 5;
 
-  const subscribe = async (plan: PlanId) => {
+  const subscribe = (plan: PlanId) => {
     if (plan === "free") return;
     setBusy(plan);
-    try {
-      const { authorization_url } = await checkout({
-        data: { plan: plan as "starter" | "premium", callbackOrigin: window.location.origin },
-      });
-      window.location.href = authorization_url;
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not start checkout");
-      setBusy(null);
-    }
   };
 
   return (
     <div className="dashboard-canvas p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
+      {busy && busy !== "free" && (
+        <MomoPlanDialog plan={busy} price={getPlan(busy, plans).price} name={getPlan(busy, plans).name} onClose={() => setBusy(null)} />
+      )}
       <header>
         <p className="text-xs font-bold uppercase tracking-wider text-primary">Plans & billing</p>
         <h1 className="font-display text-2xl md:text-3xl font-bold">Grow faster with the right plan</h1>
@@ -288,5 +283,101 @@ function MarketingPanel() {
         </button>
       </div>
     </div>
+  );
+}
+
+const NETWORKS = [
+  { id: "MTN", label: "MTN MoMo" },
+  { id: "TELECEL", label: "Telecel Cash" },
+  { id: "AT", label: "AT Money" },
+] as const;
+
+function MomoPlanDialog({ plan, price, name, onClose }: { plan: PlanId; price: number; name: string; onClose: () => void }) {
+  const start = useServerFn(startSubscriptionMomo);
+  const check = useServerFn(checkSubscriptionMomo);
+  const qc = useQueryClient();
+  const [channel, setChannel] = useState<"MTN" | "TELECEL" | "AT">("MTN");
+  const [payer, setPayer] = useState("");
+  const [otp, setOtp] = useState("");
+  const [ref, setRef] = useState<string | null>(null);
+  const [step, setStep] = useState<"form" | "otp" | "waiting" | "done">("form");
+  const [loading, setLoading] = useState(false);
+
+  const poll = async (reference: string) => {
+    setStep("waiting");
+    for (let i = 0; i < 45; i++) {
+      await new Promise((r) => setTimeout(r, 4000));
+      try {
+        const r = await check({ data: { reference } });
+        if (r.status === "paid") {
+          setStep("done");
+          qc.invalidateQueries({ queryKey: ["seller-subscription"] });
+          qc.invalidateQueries({ queryKey: ["subscription-payments"] });
+          toast.success(`${name} plan activated`);
+          return;
+        }
+        if (r.status === "failed") { toast.error(r.reason); setStep("form"); return; }
+      } catch { /* keep polling */ }
+    }
+    toast.error("We didn't get a confirmation yet. If you approved, your plan will activate shortly.");
+    setStep("form");
+  };
+
+  const submit = async () => {
+    setLoading(true);
+    try {
+      const r = await start({ data: { plan: plan as "starter" | "premium", channel, payer, reference: ref ?? undefined, otp: step === "otp" ? otp : undefined } });
+      setRef(r.reference);
+      if (r.next === "otp") { setStep("otp"); toast.info(r.message ?? "Enter the SMS code"); }
+      else void poll(r.reference);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not start payment");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o && step !== "waiting") onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Pay for {name} with Mobile Money</DialogTitle>
+          <DialogDescription>{ghs(price)} for 30 days. You'll get a prompt on your phone to approve with your PIN.</DialogDescription>
+        </DialogHeader>
+        {step === "done" ? (
+          <div className="text-center py-4 space-y-3">
+            <Check className="mx-auto text-primary" size={40} />
+            <p className="font-bold">Your {name} plan is active!</p>
+            <button onClick={onClose} className="btn-hot w-full rounded-xl py-3 font-bold">Done</button>
+          </div>
+        ) : step === "waiting" ? (
+          <div className="text-center py-6 space-y-3">
+            <Loader2 className="mx-auto animate-spin text-primary" size={36} />
+            <p className="font-bold">Check your phone</p>
+            <p className="text-sm text-muted-foreground">Approve the {ghs(price)} payment prompt and enter your MoMo PIN.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-2">
+              {NETWORKS.map((n) => (
+                <button key={n.id} type="button" onClick={() => setChannel(n.id)} disabled={step === "otp"}
+                  className={`rounded-xl border-2 px-2 py-2.5 text-xs font-bold ${channel === n.id ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>
+                  {n.label}
+                </button>
+              ))}
+            </div>
+            <input value={payer} onChange={(e) => setPayer(e.target.value)} disabled={step === "otp"} inputMode="tel" placeholder="MoMo number e.g. 024 123 4567"
+              className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm" />
+            {step === "otp" && (
+              <input value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} inputMode="numeric" maxLength={10} placeholder="SMS code"
+                className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm tracking-widest" />
+            )}
+            <button onClick={submit} disabled={loading || payer.replace(/\D/g, "").length < 9 || (step === "otp" && otp.length < 4)}
+              className="btn-hot w-full rounded-xl py-3 font-bold disabled:opacity-60 inline-flex items-center justify-center gap-2">
+              {loading && <Loader2 size={16} className="animate-spin" />}
+              {step === "otp" ? "Confirm code" : `Pay ${ghs(price)}`}
+            </button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
