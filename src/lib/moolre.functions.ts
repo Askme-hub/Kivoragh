@@ -48,7 +48,7 @@ export const startMoolrePayment = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { order, total } = await createPendingOnlineOrder(context.userId, data as any);
     const reference = `KV-${order.id.replace(/-/g, "").slice(0, 12)}-${Date.now()}`;
-    await supabaseAdmin.from("orders").update({ payment_reference: reference, payment_method: "momo" } as any).eq("id", order.id);
+    await supabaseAdmin.from("orders").update({ payment_reference: reference, payment_method: "online" } as any).eq("id", order.id);
     const r = await moolreCollect({ channel: data.channel, payer: data.payer, amount: Number(total), externalref: reference });
     if (r.next === "error") {
       await supabaseAdmin.from("orders").update({ payment_status: "failed" }).eq("id", order.id);
