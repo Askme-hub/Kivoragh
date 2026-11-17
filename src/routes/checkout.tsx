@@ -25,7 +25,7 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import { formatGHC, useShop } from "@/lib/store";
 import { supabase } from "@/integrations/supabase/client";
-import { initiatePaystackCheckout } from "@/lib/paystack.functions";
+import { startMoolrePayment, submitMoolreOtp, checkMoolrePayment } from "@/lib/moolre.functions";
 import { placeCODOrder } from "@/lib/cod.functions";
 import { sendPhoneOTP, verifyPhoneOTP } from "@/lib/phone-otp.functions";
 import { validateCoupon } from "@/lib/coupons.functions";
@@ -36,6 +36,8 @@ import { doorDeliveryFee, zoneForRegion, DELIVERY_ZONES } from "@/lib/delivery-z
 import { useDeliveryZones } from "@/lib/use-delivery-zones";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { DetectLocationButton } from "@/components/DetectLocationButton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -63,32 +65,19 @@ const GH_REGIONS = [
   "Bono East", "Ahafo", "Western North", "Oti", "Savannah", "North East",
 ];
 
-/** Load Paystack's inline popup script once; returns null if unavailable. */
-async function loadPaystack(): Promise<any | null> {
-  if (typeof window === "undefined") return null;
-  const w = window as any;
-  if (w.PaystackPop) return w.PaystackPop;
-  return new Promise((resolve) => {
-    const existing = document.getElementById("paystack-inline-js") as HTMLScriptElement | null;
-    const done = () => resolve((window as any).PaystackPop ?? null);
-    if (existing) {
-      existing.addEventListener("load", done, { once: true });
-      existing.addEventListener("error", () => resolve(null), { once: true });
-      return;
-    }
-    const s = document.createElement("script");
-    s.id = "paystack-inline-js";
-    s.src = "https://js.paystack.co/v2/inline.js";
-    s.async = true;
-    s.onload = done;
-    s.onerror = () => resolve(null);
-    document.head.appendChild(s);
-    setTimeout(() => resolve((window as any).PaystackPop ?? null), 8000);
-  });
+type MomoNet = "MTN" | "TELECEL" | "AT";
+const MOMO_NETS: { id: MomoNet; label: string }[] = [
+  { id: "MTN", label: "MTN MoMo" },
+  { id: "TELECEL", label: "Telecel Cash" },
+  { id: "AT", label: "AT Money" },
+];
+function guessNet(phone: string): MomoNet {
+  const d = phone.replace(/\D/g, "").replace(/^233/, "0");
+  const p = d.slice(0, 3);
+  if (["020", "050"].includes(p)) return "TELECEL";
+  if (["026", "027", "056", "057"].includes(p)) return "AT";
+  return "MTN";
 }
-
-/** Online (Paystack) payments are paused until the live account is ready. */
-const ONLINE_PAYMENTS_PAUSED = true;
 
 const Schema = z.object({
   full_name: z.string().trim().min(2, "Enter your full name").max(100),
@@ -106,7 +95,15 @@ function Checkout() {
   const clearCart = useShop((s) => s.clearCart);
   const itemsTotal = useShop((s) => s.cartTotal());
   const itemCount = cart.reduce((a, c) => a + c.qty, 0);
-  const initCheckout = useServerFn(initiatePaystackCheckout);
+  const startMomo = useServerFn(startMoolrePayment);
+  const sendMomoOtp = useServerFn(submitMoolreOtp);
+  const checkMomo = useServerFn(checkMoolrePayment);
+  const [momoNet, setMomoNet] = useState<MomoNet>("MTN");
+  const [momoPhone, setMomoPhone] = useState("");
+  const [momoOrder, setMomoOrder] = useState<string | null>(null);
+  const [momoStage, setMomoStage] = useState<"otp" | "prompt" | "failed" | null>(null);
+  const [momoOtp, setMomoOtp] = useState("");
+  const [momoMsg, setMomoMsg] = useState("");
   const placeCOD = useServerFn(placeCODOrder);
   const sendOtp = useServerFn(sendPhoneOTP);
   const verifyOtp = useServerFn(verifyPhoneOTP);
@@ -311,13 +308,15 @@ function Checkout() {
   );
   const codAllowed = !!selected && farShops.length === 0;
   useEffect(() => {
-    if (!codAllowed && paymentMethod === "cod" && !ONLINE_PAYMENTS_PAUSED) setPaymentMethod("online");
+    if (!codAllowed && paymentMethod === "cod") setPaymentMethod("online");
   }, [codAllowed, paymentMethod]);
 
   const blocker = !selected
     ? "Add a delivery address to continue"
     : deliveryType === "pickup" && !pickupStation
       ? "Choose a pickup station to continue"
+      : paymentMethod === "online" && momoPhone.replace(/\D/g, "").length < 9
+        ? "Enter your Mobile Money number"
       : paymentMethod === "cod" && !codAllowed
         ? `Pay on Delivery is only for shops in ${selectedRegion}`
         : cart.length === 0
@@ -373,41 +372,14 @@ function Checkout() {
         router.navigate({ to: "/orders/$id", params: { id: res.order_id } });
         return;
       }
-      if (ONLINE_PAYMENTS_PAUSED) {
-        toast.info("Online payment is coming soon. Please use Pay on Delivery for now.");
-        setPaying(false);
-        return;
-      }
-      const res = await initCheckout({
-        data: {
-          callbackOrigin: window.location.origin,
-          delivery: { ...deliveryPayload, shipping_fee: shipping, discount },
-          items: itemsPayload,
-          coupon_code: appliedCoupon?.code,
-        },
+      const res = await startMomo({
+        data: { delivery: deliveryPayload, items: itemsPayload, coupon_code: appliedCoupon?.code, channel: momoNet, payer: momoPhone },
       });
-
-      const done = () => {
-        window.location.href = `/payment/callback?ref=${encodeURIComponent(res.reference)}`;
-      };
-      const PaystackPop = await loadPaystack();
-      if (!PaystackPop) {
-        window.location.href = res.authorization_url;
-        return;
-      }
-      const popup = new PaystackPop();
-      popup.resumeTransaction(res.access_code, {
-        onSuccess: done,
-        onLoad: () => {},
-        onCancel: () => {
-          setPaying(false);
-          toast.info("Payment cancelled — your cart is still saved.");
-        },
-        onError: () => {
-          setPaying(false);
-          toast.error("Payment could not be completed. Your cart is saved.");
-        },
-      });
+      setMomoOrder(res.order_id);
+      setMomoOtp("");
+      setMomoMsg(res.message ?? "");
+      setMomoStage(res.next === "otp" ? "otp" : "prompt");
+      setPaying(false);
     } catch (e: any) {
       setPaying(false);
       if (String(e?.message ?? "").includes("verify your phone")) {
@@ -416,6 +388,40 @@ function Checkout() {
       }
       toast.error(e.message ?? "Checkout failed");
     }
+  };
+
+  useEffect(() => {
+    if (momoStage !== "prompt" || !momoOrder) return;
+    let stop = false;
+    const started = Date.now();
+    const tick = async () => {
+      if (stop) return;
+      try {
+        const r = await checkMomo({ data: { order_id: momoOrder } });
+        if (r.status === "paid") {
+          clearCart();
+          toast.success("Payment received! Your order is confirmed.");
+          router.navigate({ to: "/orders/$id", params: { id: momoOrder } });
+          return;
+        }
+        if (r.status === "failed") { setMomoStage("failed"); setMomoMsg(r.reason ?? "Payment was not completed."); return; }
+      } catch { /* keep waiting */ }
+      if (Date.now() - started > 180000) { setMomoStage("failed"); setMomoMsg("We didn't get your approval in time. You can try again."); return; }
+      setTimeout(tick, 4000);
+    };
+    const t = setTimeout(tick, 5000);
+    return () => { stop = true; clearTimeout(t); };
+  }, [momoStage, momoOrder]);
+
+  const submitOtp = async () => {
+    if (!momoOrder) return;
+    setOtpBusy(true);
+    try {
+      await sendMomoOtp({ data: { order_id: momoOrder, channel: momoNet, payer: momoPhone, otp: momoOtp } });
+      setMomoStage("prompt");
+    } catch (e: any) {
+      toast.error(e.message ?? "Code not accepted");
+    } finally { setOtpBusy(false); }
   };
 
   // ---------- Order Summary (shared between desktop sticky + mobile) ----------
@@ -496,7 +502,7 @@ function Checkout() {
         <p className="text-xs leading-relaxed text-muted-foreground">
           {paymentMethod === "cod"
             ? "No payment now. Pay the courier in cash or MoMo when your order arrives."
-            : "Your payment is encrypted and securely processed by Paystack."}
+            : "You approve the payment with your MoMo PIN on your own phone. Secured by Moolre."}
         </p>
       </div>
     </div>
@@ -504,6 +510,39 @@ function Checkout() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] pb-56 md:pb-10">
+      {momoStage && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-foreground/50 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label="Mobile Money payment">
+          <div className="w-full max-w-md rounded-t-3xl bg-card p-6 shadow-elevated sm:rounded-3xl">
+            {momoStage === "otp" && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary"><Smartphone size={22} /></div><div><p className="text-base font-bold">Verify your MoMo number</p><p className="text-xs text-muted-foreground">One-time step for {momoPhone}</p></div></div>
+                <p className="text-sm text-muted-foreground">{momoMsg || "Enter the code sent to your phone by SMS."}</p>
+                <Input inputMode="numeric" autoFocus maxLength={10} placeholder="Enter code" value={momoOtp} onChange={(e) => setMomoOtp(e.target.value.replace(/\D/g, ""))} className="h-12 text-center text-lg tracking-[0.4em]" />
+                <Button onClick={submitOtp} disabled={otpBusy || momoOtp.length < 4} className="btn-hot h-12 w-full rounded-full text-base font-bold">{otpBusy ? <Loader2 size={18} className="animate-spin" /> : "Verify & continue"}</Button>
+                <Button variant="ghost" onClick={() => setMomoStage(null)} className="w-full">Cancel</Button>
+              </div>
+            )}
+            {momoStage === "prompt" && (
+              <div className="space-y-4 text-center">
+                <div className="relative mx-auto flex h-20 w-20 items-center justify-center"><span className="absolute inset-0 animate-ping rounded-full bg-primary/25" /><div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground"><Smartphone size={30} /></div></div>
+                <p className="text-lg font-bold">Check your phone</p>
+                <p className="text-sm text-muted-foreground">A payment prompt for <span className="font-semibold text-foreground">{formatGHC(grand)}</span> was sent to <span className="font-semibold text-foreground">{momoPhone}</span>. Enter your MoMo PIN to approve.</p>
+                <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground"><Loader2 size={14} className="animate-spin" /> Waiting for approval…</p>
+                <p className="text-[11px] text-muted-foreground">No prompt? Dial your network's MoMo menu and check "My approvals".</p>
+              </div>
+            )}
+            {momoStage === "failed" && (
+              <div className="space-y-4 text-center">
+                <p className="text-lg font-bold">Payment not completed</p>
+                <p className="text-sm text-muted-foreground">{momoMsg}</p>
+                <Button onClick={() => { setMomoStage(null); pay(); }} className="btn-hot h-12 w-full rounded-full text-base font-bold">Try again</Button>
+                <Button variant="ghost" onClick={() => setMomoStage(null)} className="w-full">Close</Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <PageHeader title={mobileStep === "delivery" ? "Delivery" : "Payment"} />
 
       {/* Progress indicator */}
@@ -767,14 +806,33 @@ function Checkout() {
               </div>
 
               <div className="space-y-3 p-4 md:p-5">
-                <Button variant="ghost" onClick={() => setPaymentChoicesOpen((open) => !open)} aria-expanded={paymentChoicesOpen} className="h-auto w-full justify-between whitespace-normal border-b border-border px-0 pb-3"><span>Pre-pay with card or Mobile Money</span><ChevronRight size={16} className={cn(paymentChoicesOpen && "rotate-90")} /></Button>
-                {paymentChoicesOpen && <div className="divide-y divide-border">
-                  {[
-                    { title: "Debit / Credit Card", detail: "Visa · Mastercard", icon: CreditCard },
-                    { title: "Mobile Money", detail: "MTN MoMo · Telecel Cash · AT Money", icon: Smartphone },
-                    { title: "Bank Transfer", detail: "Pay from your bank account", icon: Building2 },
-                  ].map((method) => <div key={method.title} aria-disabled="true" className="flex items-start gap-3 py-4"><method.icon size={22} className="mt-1 shrink-0 text-muted-foreground" /><div className="min-w-0 flex-1"><p className="text-sm font-semibold">{method.title}</p><p className="mt-1 text-xs text-muted-foreground">{method.detail}</p></div><span className="shrink-0 rounded bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">Coming soon</span></div>)}
-                </div>}
+                {/* Mobile Money (Moolre) */}
+                <div className={cn("rounded-lg border-2 transition", paymentMethod === "online" ? "border-primary bg-primary/5 shadow-sm" : "border-border")}>
+                  <button type="button" onClick={() => { setPaymentMethod("online"); if (!momoPhone && selected?.phone) { setMomoPhone(selected.phone); setMomoNet(guessNet(selected.phone)); } }} className="flex w-full items-start gap-3.5 px-4 py-3.5 text-left">
+                    <div className={cn("mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", paymentMethod === "online" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground")}><Smartphone size={20} /></div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold">Mobile Money</p>
+                        {paymentMethod === "online" && <span className="inline-flex items-center gap-1 rounded-md bg-success/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success"><Check size={10} /> Selected</span>}
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">MTN MoMo · Telecel Cash · AT Money — approve with your PIN</p>
+                    </div>
+                  </button>
+                  {paymentMethod === "online" && (
+                    <div className="space-y-3 border-t border-border px-4 pb-4 pt-3">
+                      <div className="grid grid-cols-3 gap-2">
+                        {MOMO_NETS.map((n) => (
+                          <button key={n.id} type="button" onClick={() => setMomoNet(n.id)} className={cn("rounded-lg border px-2 py-2 text-xs font-semibold", momoNet === n.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background")}>{n.label}</button>
+                        ))}
+                      </div>
+                      <div>
+                        <Label htmlFor="momo-phone" className="text-xs">Mobile Money number</Label>
+                        <Input id="momo-phone" inputMode="tel" placeholder="024 000 0000" value={momoPhone} maxLength={16} onChange={(e) => { setMomoPhone(e.target.value); if (e.target.value.replace(/\D/g, "").length >= 3) setMomoNet(guessNet(e.target.value)); }} className="mt-1 h-11" />
+                        <p className="mt-1 text-[11px] text-muted-foreground">A payment prompt will pop up on this phone. Enter your PIN to approve.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* COD */}
                 <Button variant="ghost"
@@ -944,7 +1002,7 @@ function Checkout() {
                 ) : (
                   <>
                     <Lock size={16} />
-                    {paymentMethod === "cod" ? "Place Order · Pay on Delivery" : "Pay Securely"}
+                    {paymentMethod === "cod" ? "Place Order · Pay on Delivery" : `Pay ${formatGHC(grand)} with MoMo`}
                   </>
                 )}
               </Button>
@@ -967,7 +1025,7 @@ function Checkout() {
             setMobileStep("payment"); window.scrollTo({ top: 0, behavior: "instant" });
           }}>Continue to Payment<ChevronRight size={16} /></Button> : <>
             {blocker && <p className="mb-2 text-xs text-danger-ink">{blocker}</p>}
-            <Button onClick={pay} disabled={paying || !!blocker} className="h-12 w-full rounded-xl text-base font-bold shadow-md">{paying ? <><Loader2 size={18} className="animate-spin" />Processing…</> : <><Lock size={16} />{paymentMethod === "cod" ? "Confirm Order · Pay on Delivery" : "Pay Securely"}</>}</Button>
+            <Button onClick={pay} disabled={paying || !!blocker} className="h-12 w-full rounded-xl text-base font-bold shadow-md">{paying ? <><Loader2 size={18} className="animate-spin" />Processing…</> : <><Lock size={16} />{paymentMethod === "cod" ? "Confirm Order · Pay on Delivery" : `Pay ${formatGHC(grand)} with MoMo`}</>}</Button>
           </>}
         </div>
       </div>

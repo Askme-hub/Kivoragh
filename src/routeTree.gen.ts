@@ -67,6 +67,7 @@ import { Route as SellerSubscriptionRouteImport } from './routes/seller.subscrip
 import { Route as SellerWalletRouteImport } from './routes/seller.wallet'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 import { Route as SubscriptionCallbackRouteImport } from './routes/subscription.callback'
+import { Route as ApiPublicMoolreWebhookRouteImport } from './routes/api/public/moolre-webhook'
 import { Route as ApiPublicPaystackWebhookRouteImport } from './routes/api/public/paystack-webhook'
 import { Route as OrdersStatusIdRouteImport } from './routes/orders.status.$id'
 import { Route as SellerOrdersIndexRouteImport } from './routes/seller.orders.index'
@@ -369,6 +370,11 @@ const SubscriptionCallbackRoute = SubscriptionCallbackRouteImport.update({
   path: '/subscription/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicMoolreWebhookRoute = ApiPublicMoolreWebhookRouteImport.update({
+  id: '/api/public/moolre-webhook',
+  path: '/api/public/moolre-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPaystackWebhookRoute =
   ApiPublicPaystackWebhookRouteImport.update({
     id: '/api/public/paystack-webhook',
@@ -485,6 +491,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/orders/': typeof OrdersIndexRoute
   '/seller/': typeof SellerIndexRoute
+  '/api/public/moolre-webhook': typeof ApiPublicMoolreWebhookRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/orders/status/$id': typeof OrdersStatusIdRoute
   '/seller/orders/$id': typeof SellerOrdersIdRoute
@@ -552,6 +559,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/orders': typeof OrdersIndexRoute
   '/seller': typeof SellerIndexRoute
+  '/api/public/moolre-webhook': typeof ApiPublicMoolreWebhookRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/orders/status/$id': typeof OrdersStatusIdRoute
   '/seller/orders/$id': typeof SellerOrdersIdRoute
@@ -624,6 +632,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/orders/': typeof OrdersIndexRoute
   '/seller/': typeof SellerIndexRoute
+  '/api/public/moolre-webhook': typeof ApiPublicMoolreWebhookRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/orders/status/$id': typeof OrdersStatusIdRoute
   '/seller/orders/$id': typeof SellerOrdersIdRoute
@@ -697,6 +706,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/orders/'
     | '/seller/'
+    | '/api/public/moolre-webhook'
     | '/api/public/paystack-webhook'
     | '/orders/status/$id'
     | '/seller/orders/$id'
@@ -764,6 +774,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/orders'
     | '/seller'
+    | '/api/public/moolre-webhook'
     | '/api/public/paystack-webhook'
     | '/orders/status/$id'
     | '/seller/orders/$id'
@@ -835,6 +846,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/orders/'
     | '/seller/'
+    | '/api/public/moolre-webhook'
     | '/api/public/paystack-webhook'
     | '/orders/status/$id'
     | '/seller/orders/$id'
@@ -878,6 +890,7 @@ export interface RootRouteChildren {
   ProductsIdRoute: typeof ProductsIdRoute
   ShopSlugRoute: typeof ShopSlugRoute
   SubscriptionCallbackRoute: typeof SubscriptionCallbackRoute
+  ApiPublicMoolreWebhookRoute: typeof ApiPublicMoolreWebhookRoute
   ApiPublicPaystackWebhookRoute: typeof ApiPublicPaystackWebhookRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -1291,6 +1304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SubscriptionCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/moolre-webhook': {
+      id: '/api/public/moolre-webhook'
+      path: '/api/public/moolre-webhook'
+      fullPath: '/api/public/moolre-webhook'
+      preLoaderRoute: typeof ApiPublicMoolreWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/paystack-webhook': {
       id: '/api/public/paystack-webhook'
       path: '/api/public/paystack-webhook'
@@ -1511,6 +1531,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProductsIdRoute: ProductsIdRoute,
   ShopSlugRoute: ShopSlugRoute,
   SubscriptionCallbackRoute: SubscriptionCallbackRoute,
+  ApiPublicMoolreWebhookRoute: ApiPublicMoolreWebhookRoute,
   ApiPublicPaystackWebhookRoute: ApiPublicPaystackWebhookRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
