@@ -36,6 +36,8 @@ import { doorDeliveryFee, zoneForRegion, DELIVERY_ZONES } from "@/lib/delivery-z
 import { useDeliveryZones } from "@/lib/use-delivery-zones";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { DetectLocationButton } from "@/components/DetectLocationButton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -508,6 +510,39 @@ function Checkout() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] pb-56 md:pb-10">
+      {momoStage && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-foreground/50 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label="Mobile Money payment">
+          <div className="w-full max-w-md rounded-t-3xl bg-card p-6 shadow-elevated sm:rounded-3xl">
+            {momoStage === "otp" && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary"><Smartphone size={22} /></div><div><p className="text-base font-bold">Verify your MoMo number</p><p className="text-xs text-muted-foreground">One-time step for {momoPhone}</p></div></div>
+                <p className="text-sm text-muted-foreground">{momoMsg || "Enter the code sent to your phone by SMS."}</p>
+                <Input inputMode="numeric" autoFocus maxLength={10} placeholder="Enter code" value={momoOtp} onChange={(e) => setMomoOtp(e.target.value.replace(/\D/g, ""))} className="h-12 text-center text-lg tracking-[0.4em]" />
+                <Button onClick={submitOtp} disabled={otpBusy || momoOtp.length < 4} className="btn-hot h-12 w-full rounded-full text-base font-bold">{otpBusy ? <Loader2 size={18} className="animate-spin" /> : "Verify & continue"}</Button>
+                <Button variant="ghost" onClick={() => setMomoStage(null)} className="w-full">Cancel</Button>
+              </div>
+            )}
+            {momoStage === "prompt" && (
+              <div className="space-y-4 text-center">
+                <div className="relative mx-auto flex h-20 w-20 items-center justify-center"><span className="absolute inset-0 animate-ping rounded-full bg-primary/25" /><div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground"><Smartphone size={30} /></div></div>
+                <p className="text-lg font-bold">Check your phone</p>
+                <p className="text-sm text-muted-foreground">A payment prompt for <span className="font-semibold text-foreground">{formatGHC(grand)}</span> was sent to <span className="font-semibold text-foreground">{momoPhone}</span>. Enter your MoMo PIN to approve.</p>
+                <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground"><Loader2 size={14} className="animate-spin" /> Waiting for approval…</p>
+                <p className="text-[11px] text-muted-foreground">No prompt? Dial your network's MoMo menu and check "My approvals".</p>
+              </div>
+            )}
+            {momoStage === "failed" && (
+              <div className="space-y-4 text-center">
+                <p className="text-lg font-bold">Payment not completed</p>
+                <p className="text-sm text-muted-foreground">{momoMsg}</p>
+                <Button onClick={() => { setMomoStage(null); pay(); }} className="btn-hot h-12 w-full rounded-full text-base font-bold">Try again</Button>
+                <Button variant="ghost" onClick={() => setMomoStage(null)} className="w-full">Close</Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <PageHeader title={mobileStep === "delivery" ? "Delivery" : "Payment"} />
 
       {/* Progress indicator */}
@@ -967,7 +1002,7 @@ function Checkout() {
                 ) : (
                   <>
                     <Lock size={16} />
-                    {paymentMethod === "cod" ? "Place Order · Pay on Delivery" : "Pay Securely"}
+                    {paymentMethod === "cod" ? "Place Order · Pay on Delivery" : `Pay ${formatGHC(grand)} with MoMo`}
                   </>
                 )}
               </Button>
@@ -990,7 +1025,7 @@ function Checkout() {
             setMobileStep("payment"); window.scrollTo({ top: 0, behavior: "instant" });
           }}>Continue to Payment<ChevronRight size={16} /></Button> : <>
             {blocker && <p className="mb-2 text-xs text-danger-ink">{blocker}</p>}
-            <Button onClick={pay} disabled={paying || !!blocker} className="h-12 w-full rounded-xl text-base font-bold shadow-md">{paying ? <><Loader2 size={18} className="animate-spin" />Processing…</> : <><Lock size={16} />{paymentMethod === "cod" ? "Confirm Order · Pay on Delivery" : "Pay Securely"}</>}</Button>
+            <Button onClick={pay} disabled={paying || !!blocker} className="h-12 w-full rounded-xl text-base font-bold shadow-md">{paying ? <><Loader2 size={18} className="animate-spin" />Processing…</> : <><Lock size={16} />{paymentMethod === "cod" ? "Confirm Order · Pay on Delivery" : `Pay ${formatGHC(grand)} with MoMo`}</>}</Button>
           </>}
         </div>
       </div>
