@@ -30,12 +30,12 @@ export function toLocalPhone(phone: string) {
 
 export type CollectResult = { next: "otp" | "prompt" | "error"; message?: string };
 
-export async function moolreCollect(opts: { channel: MoolreChannel; payer: string; amount: number; externalref: string; otpcode?: string }, verified = false): Promise<CollectResult> {
+export async function moolreCollect(opts: { channel: MoolreChannel; payer: string; amount: number; externalref: string; otpcode?: string; label?: string }, verified = false): Promise<CollectResult> {
   const { account } = creds();
   const body: Record<string, unknown> = {
     type: 1, channel: opts.channel, currency: "GHS", payer: toLocalPhone(opts.payer),
     amount: opts.amount.toFixed(2), externalref: opts.externalref, accountnumber: account,
-    reference: "Kivora order",
+    reference: opts.label ?? "Kivora order",
   };
   if (opts.otpcode) body.otpcode = opts.otpcode;
   const r = await call("/open/transact/payment", body, verified ? opts.externalref : undefined);
