@@ -18,6 +18,14 @@ export const Route = createFileRoute("/api/public/moolre-webhook")({
         const ref = typeof event?.data?.externalref === "string" ? event.data.externalref.slice(0, 200) : null;
         if (!ref) return new Response("ok");
 
+        // Seller plan payments
+        if (ref.startsWith("SUB-")) {
+          const { parseSubscriptionRef, activateSubscription } = await import("@/lib/subscription-activate.server");
+          const parsed = parseSubscriptionRef(ref);
+          if (parsed && (await moolreStatus(ref)).txstatus === 1) await activateSubscription(parsed.userId, parsed.plan, ref);
+          return new Response("ok");
+        }
+
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data: order } = await supabaseAdmin.from("orders")
           .select("id, total, payment_status").eq("payment_reference", ref).maybeSingle();

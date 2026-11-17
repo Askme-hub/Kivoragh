@@ -58,6 +58,50 @@ export const initiateSubscriptionCheckout = createServerFn({ method: "POST" })
     };
   });
 
+const Channel = z.enum(["MTN", "TELECEL", "AT"]);
+const Payer = z.string().trim().min(9).max(16).regex(/^[0-9+\s]+$/);
+
+/** Start a Mobile Money (Moolre) prompt for a seller plan. */
+export const startSubscriptionMomo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({
+    plan: z.enum(["starter", "premium"]), channel: Channel, payer: Payer,
+    reference: z.string().max(80).optional(), otp: z.string().trim().regex(/^\d{4,10}$/).optional(),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: planRow } = await supabaseAdmin.from("subscription_plans").select("price").eq("id", data.plan).maybeSingle();
+    const amount = Number(planRow?.price ?? 0);
+    if (!amount) throw new Error("This plan is not available for purchase");
+    const { subscriptionRef, parseSubscriptionRef } = await import("./subscription-activate.server");
+    let reference = subscriptionRef(data.plan, context.userId);
+    if (data.reference) {
+      const parsed = parseSubscriptionRef(data.reference);
+      if (!parsed || parsed.userId !== context.userId || parsed.plan !== data.plan) throw new Error("Invalid payment reference");
+      reference = data.reference;
+    }
+    const { moolreCollect } = await import("./moolre.server");
+    const r = await moolreCollect({ channel: data.channel, payer: data.payer, amount, externalref: reference, otpcode: data.otp, label: `Kivora ${data.plan} plan` });
+    if (r.next === "error") throw new Error(r.message);
+    if (r.next === "otp" && data.otp) throw new Error("That code didn't work. Check the SMS and try again.");
+    return { reference, next: r.next, message: r.message };
+  });
+
+/** Poll a Moolre subscription payment; activates the plan exactly once. */
+export const checkSubscriptionMomo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ reference: z.string().min(1).max(80) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { parseSubscriptionRef, activateSubscription } = await import("./subscription-activate.server");
+    const parsed = parseSubscriptionRef(data.reference);
+    if (!parsed || parsed.userId !== context.userId) throw new Error("Subscription mismatch");
+    const { moolreStatus } = await import("./moolre.server");
+    const s = await moolreStatus(data.reference);
+    if (s.txstatus === 1) { await activateSubscription(parsed.userId, parsed.plan, data.reference); return { status: "paid" as const }; }
+    if (s.txstatus === 2) return { status: "failed" as const, reason: s.reason ?? "Payment was declined or cancelled." };
+    return { status: "pending" as const };
+  });
+
 export const verifySubscriptionPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
