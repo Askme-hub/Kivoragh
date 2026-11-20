@@ -354,7 +354,7 @@ function Checkout() {
     ? "Add a delivery address to continue"
     : deliveryType === "pickup" && !pickupStation
       ? "Choose a pickup station to continue"
-      : paymentMethod === "online" && momoPhone.replace(/\D/g, "").length < 9
+      : paymentMethod === "online" && amountDue > 0 && momoPhone.replace(/\D/g, "").length < 9
         ? "Enter your Mobile Money number"
       : paymentMethod === "cod" && !codAllowed
         ? `Pay on Delivery is only for shops in ${selectedRegion}`
