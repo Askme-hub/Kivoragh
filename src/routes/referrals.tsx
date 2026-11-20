@@ -53,9 +53,10 @@ function ReferralsPage() {
     return () => { active = false; };
   }, [user?.id]);
 
+  // Always share Kivora's public website URL, not a preview or deployment hostname.
   const referralLink = useMemo(() => {
-    if (!code || typeof window === "undefined") return "";
-    return `${window.location.origin}/login?ref=${encodeURIComponent(code)}`;
+    if (!code) return "";
+    return `https://kivoragh.shop/login?ref=${encodeURIComponent(code)}`;
   }, [code]);
 
   const copy = async (value: string, label: string) => {
@@ -65,6 +66,27 @@ function ReferralsPage() {
     } catch {
       toast.error("Could not copy. Please select and copy it manually.");
     }
+  };
+
+  const shareInvite = async () => {
+    if (!referralLink) return;
+    const shareData = {
+      title: "Join me on Kivora",
+      text: "Discover products on Kivora. Register using my referral link:",
+      url: referralLink,
+    };
+
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (error) {
+        // Do not show an error if the user simply closes the native share sheet.
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+
+    await copy(referralLink, "Referral link");
   };
 
   const qualified = events.filter((e) => e.status === "qualified").length;
@@ -90,8 +112,15 @@ function ReferralsPage() {
               <span className="text-2xl font-extrabold tracking-[0.18em]">{code || "—"}</span>
               <button onClick={() => copy(code, "Referral code")} disabled={!code} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-semibold disabled:opacity-50"><Copy size={15} /> Copy</button>
             </div>
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-              <button onClick={() => copy(referralLink, "Referral link")} disabled={!referralLink} className="flex-1 rounded-lg bg-primary px-4 py-3 text-sm font-bold text-primary-foreground"><Share2 size={16} className="mr-2 inline" />Copy invite link</button>
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Your shareable Kivora invite link</p>
+              <div className="break-all rounded-lg border border-border bg-muted/50 px-3 py-3 text-sm leading-relaxed select-all">
+                {referralLink || "Preparing your invite link…"}
+              </div>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <button onClick={() => copy(referralLink, "Referral link")} disabled={!referralLink} className="flex-1 rounded-lg border border-border px-4 py-3 text-sm font-bold disabled:opacity-50"><Copy size={16} className="mr-2 inline" />Copy link</button>
+                <button onClick={shareInvite} disabled={!referralLink} className="flex-1 rounded-lg bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"><Share2 size={16} className="mr-2 inline" />Share invite</button>
+              </div>
             </div>
           </>
         )}
