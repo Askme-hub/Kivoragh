@@ -104,7 +104,7 @@ function CancelBlock({ order }: { order: any }) {
     if (order.refund_status === "pending")
       return (
         <div className="mx-4 mt-3 p-3 rounded-lg bg-warning-soft text-warning-ink text-sm">
-          Refund of {formatGHC(externalRefund)} is being processed to your original payment account within 2 working business days. {storeCreditApplied > 0 ? `Your ${formatGHC(storeCreditApplied)} Store Credit will be returned to your Kivora balance.` : ""}
+          Refund of {formatGHC(externalRefund)} is being processed to your original payment account within 2 working business days. {storeCreditApplied > 0 ? `Your ${formatGHC(storeCreditApplied)} Store Credit has been returned to your Kivora balance.` : ""}
         </div>
       );
     if (order.refund_status === "refunded")
