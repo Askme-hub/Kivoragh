@@ -34,6 +34,7 @@ export const phoneSignup = createServerFn({ method: "POST" })
     name: z.string().trim().min(2).max(80),
     phone: z.string().trim().min(7).max(20),
     password: z.string().min(8).max(72),
+    referral_code: z.string().trim().max(16).optional(),
   }).parse(i))
   .handler(async ({ data }) => {
     const { normalizeGhanaPhone } = await import("./sms.server");
@@ -45,7 +46,7 @@ export const phoneSignup = createServerFn({ method: "POST" })
     const email = phoneEmail(phone);
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email, password: data.password, email_confirm: true,
-      user_metadata: { display_name: data.name, phone, terms_accepted_at: new Date().toISOString() },
+      user_metadata: { display_name: data.name, phone, terms_accepted_at: new Date().toISOString(), referral_code: (data.referral_code || "").trim().toUpperCase() },
     });
     if (error || !created.user) throw new Error(error?.message?.includes("registered") ? "This phone number already has an account." : "Could not create account");
     await supabaseAdmin.from("profiles").update({ phone, email: null, terms_accepted_at: new Date().toISOString() }).eq("id", created.user.id);

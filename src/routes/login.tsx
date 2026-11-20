@@ -39,6 +39,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [referralCode, setReferralCode] = useState(() => typeof window !== "undefined" ? (new URLSearchParams(window.location.search).get("ref") ?? "").toUpperCase() : "");
   const [agree, setAgree] = useState(false);
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -53,7 +54,7 @@ function Login() {
         if (!parsed.success) throw new Error(parsed.error.issues[0].message);
         if (!agree) throw new Error("Please accept the Terms & Conditions");
         if (!parsed.data.email) {
-          const t = await phoneSignup({ data: { name: parsed.data.name, phone: parsed.data.phone, password } });
+          const t = await phoneSignup({ data: { name: parsed.data.name, phone: parsed.data.phone, password, referral_code: referralCode.trim().toUpperCase() } });
           await supabase.auth.setSession(t);
           toast.success("Welcome to Kivora!");
           router.navigate({ to: "/" });
@@ -64,7 +65,7 @@ function Login() {
           password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { display_name: parsed.data.name, phone: parsed.data.phone, terms_accepted_at: new Date().toISOString() },
+            data: { display_name: parsed.data.name, phone: parsed.data.phone, terms_accepted_at: new Date().toISOString(), referral_code: referralCode.trim().toUpperCase() },
           },
         });
         if (error) throw error;
@@ -148,6 +149,7 @@ function Login() {
         {mode === "signup" && (
           <>
             <input required placeholder="Full name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className={field} />
+            <input placeholder="Referral code (optional)" autoComplete="off" value={referralCode} onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 16))} className={field} />
             <input required type="tel" inputMode="tel" autoComplete="tel" placeholder="Phone number (e.g. 024 123 4567)" value={phone} onChange={(e) => setPhone(e.target.value)} className={field} />
           </>
         )}
