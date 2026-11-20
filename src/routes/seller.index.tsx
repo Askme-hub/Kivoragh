@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Package, Clock, CheckCircle2, Store, MessageCircle, ShoppingBag, Wallet, Plus, AlertTriangle, ChevronRight, Share2, ExternalLink, TrendingUp, Star, Settings } from "lucide-react";
+import { Package, Clock, CheckCircle2, Store, MessageCircle, ShoppingBag, Wallet, Plus, AlertTriangle, ChevronRight, Share2, ExternalLink, TrendingUp, Star, Settings, BarChart3, ArrowUpRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsSeller, useSellerProfile } from "@/hooks/use-seller";
@@ -81,6 +81,7 @@ function SellerDashboard() {
 }
 
 function Overview({ userId, shopName, slug }: { userId: string; shopName: string; slug: string | null }) {
+  const [salesRange, setSalesRange] = useState<7 | 30>(7);
   const fetchOrders = useServerFn(getSellerOrders);
   const { data: products } = useQuery({
     queryKey: ["seller-products-summary", userId],
@@ -108,6 +109,10 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
   const onTheWay = orders.filter((o) => ["shipped", "out_for_delivery", "in_transit"].includes(st(o))).length;
   const delivered = orders.filter((o) => ["delivered", "completed"].includes(st(o))).length;
   const recentOrders = orders.slice(0, 6);
+  const salesPoints = (analytics?.daily ?? []).slice(-salesRange);
+  const salesMax = Math.max(1, ...salesPoints.map((point) => point.revenue));
+  const selectedRevenue = salesPoints.reduce((sum, point) => sum + point.revenue, 0);
+  const selectedOrders = salesPoints.reduce((sum, point) => sum + point.orders, 0);
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
@@ -189,6 +194,97 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
           );
         })}
       </div>
+
+      {/* Sales performance */}
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(280px,0.85fr)]">
+        <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
+            <div className="flex items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary"><BarChart3 className="h-5 w-5" /></span>
+              <div>
+                <h2 className="text-sm font-extrabold">Sales performance</h2>
+                <p className="text-xs text-muted-foreground">Your real sales activity on Kivora</p>
+              </div>
+            </div>
+            <div className="flex rounded-xl bg-muted p-1">
+              <button type="button" onClick={() => setSalesRange(7)} aria-pressed={salesRange === 7} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${salesRange === 7 ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>7 days</button>
+              <button type="button" onClick={() => setSalesRange(30)} aria-pressed={salesRange === 30} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${salesRange === 30 ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>30 days</button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 px-4 pt-4 sm:px-5">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Sales in this period</p>
+              <p className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">{formatGHC(selectedRevenue)}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Orders in this period</p>
+              <p className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">{selectedOrders}</p>
+            </div>
+          </div>
+          {salesPoints.length > 0 ? (
+            <div className="px-3 pb-4 pt-5 sm:px-5">
+              <div className="flex h-36 items-end gap-1.5 sm:h-44 sm:gap-2">
+                {salesPoints.map((point) => {
+                  const height = point.revenue > 0 ? Math.max(5, (point.revenue / salesMax) * 100) : 2;
+                  return (
+                    <div key={point.date} className="group relative flex h-full min-w-0 flex-1 flex-col justify-end">
+                      <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-foreground px-2.5 py-1.5 text-[10px] font-semibold text-background shadow-lg group-hover:block">
+                        {point.label}: {formatGHC(point.revenue)} · {point.orders} orders
+                      </div>
+                      <div className="w-full rounded-t-md bg-primary/15 transition-colors group-hover:bg-primary/30" style={{ height: `${height}%` }}>
+                        <div className="h-full w-full rounded-t-md bg-primary" style={{ opacity: point.revenue > 0 ? 1 : 0.18 }} />
+                      </div>
+                      {(salesRange === 7 || salesPoints.indexOf(point) % 5 === 0 || salesPoints.indexOf(point) === salesPoints.length - 1) && (
+                        <span className="mt-2 truncate text-center text-[9px] font-medium text-muted-foreground sm:text-[10px]">{point.label}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-3 text-[10px] text-muted-foreground">Hover or tap a bar to inspect its daily sales and order count.</p>
+            </div>
+          ) : (
+            <div className="px-5 py-12 text-center">
+              <BarChart3 className="mx-auto h-9 w-9 text-muted-foreground/40" />
+              <p className="mt-2 text-sm font-semibold">No sales activity yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">Your sales chart will appear here when customers place orders.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b border-border px-4 py-4">
+            <div>
+              <h2 className="text-sm font-extrabold">Top products</h2>
+              <p className="text-xs text-muted-foreground">Best performers · last 30 days</p>
+            </div>
+            <Link to="/seller/products" aria-label="View all products" className="grid h-9 w-9 place-items-center rounded-xl bg-muted text-muted-foreground transition hover:bg-primary/10 hover:text-primary"><ArrowUpRight className="h-4 w-4" /></Link>
+          </div>
+          {analytics?.topProducts?.length ? (
+            <div className="divide-y divide-border">
+              {analytics.topProducts.map((product, index) => (
+                <div key={product.name} className="flex items-center gap-3 px-4 py-3">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-xs font-extrabold text-muted-foreground">{index + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-bold">{product.name}</p>
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">{product.qty} sold</p>
+                  </div>
+                  <p className="shrink-0 text-xs font-extrabold tabular-nums">{formatGHC(product.revenue)}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="px-4 py-10 text-center">
+              <Package className="mx-auto h-8 w-8 text-muted-foreground/40" />
+              <p className="mt-2 text-sm font-semibold">No product sales yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">Your top-selling products will show here.</p>
+            </div>
+          )}
+          <div className="border-t border-border bg-muted/20 px-4 py-3">
+            <p className="text-[10px] leading-relaxed text-muted-foreground">Figures are based on Kivora order records for your shop. Cancelled and unpaid orders are excluded.</p>
+          </div>
+        </div>
+      </section>
 
       {/* Tools */}
       <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
