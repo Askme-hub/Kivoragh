@@ -164,21 +164,7 @@ function SearchPage() {
               )}
             </section>
 
-            {products.length > 0 && (
-              <section>
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="text-sm font-extrabold text-foreground">Popular right now</h2>
-                  <span className="text-xs text-muted-foreground">Discover something new</span>
-                </div>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-                  {popularSearches.slice(0, 8).map((term) => (
-                    <button key={term} type="button" onClick={() => submit(term)} className="flex shrink-0 items-center gap-1.5 rounded-full bg-muted px-3.5 py-2 text-xs font-semibold text-foreground transition hover:bg-primary/10 hover:text-primary">
-                      <TrendingUp size={13} /> {term}
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
+
           </div>
         ) : (
           <>
