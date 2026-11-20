@@ -27,7 +27,7 @@ const DeliverySchema = z.object({
 async function ownOrder(orderId: string, userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: order } = await supabaseAdmin.from("orders")
-    .select("id, total, payment_status, payment_reference").eq("id", orderId).eq("user_id", userId).maybeSingle();
+    .select("id, total, store_credit_applied, payment_status, payment_reference").eq("id", orderId).eq("user_id", userId).maybeSingle();
   if (!order || !order.payment_reference) throw new Error("Order not found");
   return order;
 }
@@ -39,6 +39,7 @@ export const startMoolrePayment = createServerFn({ method: "POST" })
     items: z.array(ItemSchema).min(1).max(100),
     delivery: DeliverySchema,
     coupon_code: z.string().trim().max(50).optional(),
+    use_store_credit: z.boolean().optional().default(false),
     channel: Channel,
     payer: Payer,
   }).parse(input))
@@ -47,11 +48,29 @@ export const startMoolrePayment = createServerFn({ method: "POST" })
     const { createPendingOnlineOrder } = await import("./online-order.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { order, total } = await createPendingOnlineOrder(context.userId, data as any);
+    let amountDue = Number(total);
+    let storeCreditApplied = 0;
+    if (data.use_store_credit) {
+      const { data: creditRows, error: creditError } = await (context.supabase as any)
+        .rpc("apply_store_credit_to_order", { _order_id: order.id });
+      if (creditError) {
+        await supabaseAdmin.from("orders").delete().eq("id", order.id);
+        throw new Error(creditError.message || "Could not apply Kivora Store Credit");
+      }
+      const credit = Array.isArray(creditRows) ? creditRows[0] : creditRows;
+      storeCreditApplied = Number(credit?.applied ?? 0);
+      amountDue = Number(credit?.amount_due ?? total);
+    }
+    if (amountDue <= 0) {
+      const { finalizePaidOrder } = await import("./paid-order.server");
+      await finalizePaidOrder(order.id, Number(total));
+      return { order_id: order.id, next: "paid" as const, message: "Your order is fully paid with Kivora Store Credit.", store_credit_applied: storeCreditApplied, amount_due: 0 };
+    }
     const reference = `KV-${order.id.replace(/-/g, "").slice(0, 12)}-${Date.now()}`;
     await supabaseAdmin.from("orders").update({ payment_reference: reference, payment_method: "online" } as any).eq("id", order.id);
     let r: { next: "otp" | "prompt" | "error"; message?: string };
     try {
-      r = await moolreCollect({ channel: data.channel, payer: data.payer, amount: Number(total), externalref: reference });
+      r = await moolreCollect({ channel: data.channel, payer: data.payer, amount: amountDue, externalref: reference });
     } catch {
       // A network timeout is ambiguous: the provider may have received the request.
       // Keep the order pending and let the status checker confirm it before retrying.
@@ -61,7 +80,7 @@ export const startMoolrePayment = createServerFn({ method: "POST" })
       await supabaseAdmin.from("orders").update({ payment_status: "failed" }).eq("id", order.id);
       return { order_id: order.id, next: "error" as const, message: r.message ?? "The payment request could not be started." };
     }
-    return { order_id: order.id, next: r.next, message: r.message };
+    return { order_id: order.id, next: r.next, message: r.message, store_credit_applied: storeCreditApplied, amount_due: amountDue };
   });
 
 /** Submit the one-time SMS code (first payment from a phone number). */
@@ -75,7 +94,7 @@ export const submitMoolreOtp = createServerFn({ method: "POST" })
     const { moolreCollect } = await import("./moolre.server");
     const order = await ownOrder(data.order_id, context.userId);
     if (order.payment_status === "paid") return { next: "paid" as const };
-    const r = await moolreCollect({ channel: data.channel, payer: data.payer, amount: Number(order.total), externalref: order.payment_reference!, otpcode: data.otp });
+    const r = await moolreCollect({ channel: data.channel, payer: data.payer, amount: Number(order.total) - Number(order.store_credit_applied ?? 0), externalref: order.payment_reference!, otpcode: data.otp });
     if (r.next === "error") throw new Error(r.message);
     if (r.next === "otp") throw new Error("That code didn't work. Check the SMS and try again.");
     return { next: r.next };
