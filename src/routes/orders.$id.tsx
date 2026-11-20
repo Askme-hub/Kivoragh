@@ -97,18 +97,20 @@ const CANCELLABLE = ["pending_payment", "placed", "pending_confirmation"];
 function CancelBlock({ order }: { order: any }) {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
-  const prepaid = order.payment_method !== "cod" && order.payment_status === "paid";
+  const storeCreditApplied = Number(order.store_credit_applied ?? 0);
+  const externalRefund = Math.max(0, Number(order.amount_paid ?? order.total) - storeCreditApplied);
+  const prepaid = order.payment_method !== "cod" && order.payment_status === "paid" && externalRefund > 0;
   if (order.status === "cancelled") {
     if (order.refund_status === "pending")
       return (
         <div className="mx-4 mt-3 p-3 rounded-lg bg-warning-soft text-warning-ink text-sm">
-          Refund of {formatGHC(Number(order.total))} is being processed to your original payment account within 2 working business days.
+          Refund of {formatGHC(externalRefund)} is being processed to your original payment account within 2 working business days. {storeCreditApplied > 0 ? `Your ${formatGHC(storeCreditApplied)} Store Credit will be returned to your Kivora balance.` : ""}
         </div>
       );
     if (order.refund_status === "refunded")
       return (
         <div className="mx-4 mt-3 p-3 rounded-lg bg-success-soft text-success-ink text-sm">
-          Refund of {formatGHC(Number(order.total))} completed{order.refunded_at ? ` on ${new Date(order.refunded_at).toLocaleDateString()}` : ""}.
+          Refund of {formatGHC(externalRefund)} completed{order.refunded_at ? ` on ${new Date(order.refunded_at).toLocaleDateString()}` : ""}. {storeCreditApplied > 0 ? `${formatGHC(storeCreditApplied)} Store Credit was returned to your Kivora balance.` : ""}
         </div>
       );
     return null;
@@ -122,7 +124,7 @@ function CancelBlock({ order }: { order: any }) {
     );
   const cancel = async () => {
     const msg = prepaid
-      ? `Cancel this order? Your refund of ${formatGHC(Number(order.total))} will be sent within 2 working business days.`
+      ? `Cancel this order? Your refund of ${formatGHC(externalRefund)} will be sent within 2 working business days.${storeCreditApplied > 0 ? ` ${formatGHC(storeCreditApplied)} Store Credit will return to your Kivora balance.` : ""}`
       : "Cancel this order?";
     if (!confirm(msg)) return;
     setBusy(true);
@@ -406,9 +408,11 @@ function OrderDetails() {
             </div>
           )}
           <div className="pt-2 mt-2 border-t border-border flex justify-between items-center">
-            <span className="font-bold">Total</span>
+            <span className="font-bold">Order Total</span>
             <span className="font-extrabold text-lg">{formatGHC(Number(data.total))}</span>
           </div>
+          {Number(data.store_credit_applied ?? 0) > 0 && <div className="flex justify-between text-sm text-success"><span>Kivora Store Credit</span><span className="font-semibold">−{formatGHC(Number(data.store_credit_applied))}</span></div>}
+          {data.payment_method === "cod" && Number(data.store_credit_applied ?? 0) > 0 && <div className="flex justify-between font-semibold"><span>Amount due on delivery</span><span>{formatGHC(Math.max(0, Number(data.total) - Number(data.store_credit_applied)))}</span></div>}
           <div className="pt-1 flex justify-between text-xs">
             <span className="text-muted-foreground">Payment Status</span>
             <span
