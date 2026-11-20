@@ -40,6 +40,7 @@ function Login() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [referralCode, setReferralCode] = useState(() => typeof window !== "undefined" ? (new URLSearchParams(window.location.search).get("ref") ?? "").toUpperCase() : "");
+  const [referralCode, setReferralCode] = useState(() => typeof window !== "undefined" ? (new URLSearchParams(window.location.search).get("ref") ?? "").toUpperCase() : "");
   const [agree, setAgree] = useState(false);
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -149,6 +150,7 @@ function Login() {
         {mode === "signup" && (
           <>
             <input required placeholder="Full name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className={field} />
+            <input placeholder="Referral code (optional)" autoComplete="off" value={referralCode} onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 16))} className={field} />
             <input placeholder="Referral code (optional)" autoComplete="off" value={referralCode} onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 16))} className={field} />
             <input required type="tel" inputMode="tel" autoComplete="tel" placeholder="Phone number (e.g. 024 123 4567)" value={phone} onChange={(e) => setPhone(e.target.value)} className={field} />
           </>
