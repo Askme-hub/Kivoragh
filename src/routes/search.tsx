@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Search, SearchX, Clock3, X, ArrowUpRight, TrendingUp, Tag } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
@@ -53,13 +53,13 @@ function SearchPage() {
   }, [categories, products]);
 
   const submit = (term: string) => {
-    const clean = term.trim().replace(/\\s+/g, " ");
+    const clean = term.trim().replace(/\s+/g, " ");
     if (!clean) return;
     setRecent(rememberSearch(clean));
     router.navigate({ to: "/search", search: { q: clean } });
   };
 
-  const runSearch = (event: React.FormEvent<HTMLFormElement>) => {
+  const runSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     submit(value);
   };
