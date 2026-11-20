@@ -5,7 +5,6 @@ import {
 } from "lucide-react";
 import { useAuth, useIsAdmin } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
-import { useEffect, useState } from "react";
 import { useProfile } from "@/lib/profile";
 import { useIsSeller } from "@/hooks/use-seller";
 import { supabase } from "@/integrations/supabase/client";
