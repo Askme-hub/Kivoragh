@@ -153,197 +153,227 @@ function SellerWallet() {
   };
 
   return (
-    <div className="p-4 space-y-5">
+    <div className="mx-auto w-full max-w-6xl space-y-6 px-3 pb-10 pt-4 sm:px-5 md:pt-6">
+      <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Seller finances</p>
+          <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">My wallet</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Your earnings, payouts and money activity in one place.</p>
+        </div>
+        <div className="flex items-center gap-2 self-start rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground sm:self-auto">
+          <span className="h-2 w-2 rounded-full bg-success" /> Secure seller wallet
+        </div>
+      </header>
+
       {balance < 0 && (
-        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-foreground">
-          <p className="font-bold text-destructive">You owe Kivora {formatGHC(Math.abs(balance))} in Pay on Delivery commission</p>
-          <p className="mt-1 text-muted-foreground">For Pay on Delivery orders you collect the cash, so our commission is charged to your wallet. It will be cleared automatically from your next online sales. Withdrawals are paused until your balance is positive.</p>
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
+          <p className="font-bold text-destructive">Outstanding Pay on Delivery commission: {formatGHC(Math.abs(balance))}</p>
+          <p className="mt-1 text-muted-foreground">For Pay on Delivery orders you collect the cash, so Kivora's commission is charged to your wallet. It will be cleared automatically from your next online sales. Withdrawals are paused until your balance is positive.</p>
         </div>
       )}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <StatCard label="Available" value={formatGHC(balance)} icon={Wallet} color="text-success-ink" />
-        <StatCard label="In escrow (48h)" value={formatGHC(Number((wallet as any)?.escrow ?? 0))} icon={Clock} color="text-info-ink" />
-        <StatCard label="Withdrawal pending" value={formatGHC(Number(wallet?.pending ?? 0))} icon={Clock} color="text-warning-ink" />
-        <StatCard label="Total Earned" value={formatGHC(Number(wallet?.total_earned ?? 0))} icon={TrendingUp} color="text-primary" />
-        <StatCard label="Withdrawn" value={formatGHC(Number(wallet?.total_withdrawn ?? 0))} icon={ArrowDownToLine} color="text-muted-foreground" />
-      </div>
 
-      {/* Saved payout accounts */}
-      <section className="bg-card border border-border rounded-xl p-4">
-        <div className="flex items-center gap-2">
-          <CreditCard size={18} className="text-primary" />
-          <h2 className="font-bold flex-1">Payout Accounts</h2>
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-primary/80 p-5 text-primary-foreground shadow-lg sm:p-7">
+        <div className="pointer-events-none absolute -right-12 -top-16 h-56 w-56 rounded-full bg-primary-foreground/10" />
+        <div className="pointer-events-none absolute -bottom-24 right-28 h-44 w-44 rounded-full bg-primary-foreground/10" />
+        <div className="relative grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
+          <div>
+            <p className="flex items-center gap-2 text-sm font-semibold text-primary-foreground/80"><Wallet size={17} /> Available to withdraw</p>
+            <p className="mt-2 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">{formatGHC(balance)}</p>
+            <p className="mt-2 max-w-md text-xs leading-relaxed text-primary-foreground/75">Only cleared funds are available for withdrawal. Recent sales may remain in escrow for 48 hours.</p>
+          </div>
           <button
-            onClick={() => setShowForm((s) => !s)}
-            className="text-primary text-xs font-bold flex items-center gap-1"
+            type="button"
+            onClick={() => document.getElementById("wallet-withdraw")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+            disabled={balance <= 0}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary-foreground px-5 text-sm font-bold text-primary shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Plus size={14} /> {showForm ? "Cancel" : "Add account"}
+            <ArrowDownToLine size={17} /> Withdraw funds
           </button>
         </div>
-
-        {accounts.length > 0 && (
-          <div className="mt-3 space-y-2">
-            {accounts.map((a) => {
-              const active = selectedAccount === a.id;
-              return (
-                <div
-                  key={a.id}
-                  className={`p-3 rounded-lg border-2 ${active ? "border-primary bg-primary/5" : "border-border"}`}
-                >
-                  <button onClick={() => setSelectedAccount(a.id)} className="w-full text-left flex gap-2">
-                    <div className="mt-0.5">
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${active ? "border-primary bg-primary" : "border-border"}`}>
-                        {active && <Check size={10} className="text-primary-foreground" />}
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-sm">{a.account_name}</p>
-                        {a.is_default && <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-semibold uppercase">Default</span>}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {a.method}{a.provider ? ` · ${a.provider}` : ""} · {a.account_number}
-                      </p>
-                    </div>
-                  </button>
-                  <div className="flex justify-end mt-1">
-                    <button
-                      onClick={() => {
-                        if (confirm("Remove this payout account?")) {
-                          deleteAccount.mutate(a.id, {
-                            onSuccess: () => { if (selectedAccount === a.id) setSelectedAccount(null); },
-                          });
-                        }
-                      }}
-                      className="text-destructive text-xs font-semibold flex items-center gap-1"
-                    >
-                      <Trash2 size={12} /> Remove
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {(showForm || accounts.length === 0) && (
-          <div className="mt-3 space-y-2 border-t border-border pt-3">
-            <p className="text-xs font-bold uppercase text-muted-foreground">New payout account</p>
-            <select
-              value={method} onChange={(e) => { setMethod(e.target.value); setProvider(""); }}
-              className="w-full border-2 border-border focus:border-primary rounded-md px-3 py-2 outline-none bg-background"
-            >
-              {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
-            <input
-              value={accountName} onChange={(e) => setAccountName(e.target.value)}
-              className="w-full border-2 border-border focus:border-primary rounded-md px-3 py-2 outline-none"
-              placeholder="Registered account name (as on MoMo / bank)"
-            />
-            <input
-              value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)}
-              className="w-full border-2 border-border focus:border-primary rounded-md px-3 py-2 outline-none"
-              placeholder="Account / MoMo number"
-            />
-            {method === "Mobile Money" ? (
-              <select
-                value={provider} onChange={(e) => setProvider(e.target.value)}
-                className="w-full border-2 border-border focus:border-primary rounded-md px-3 py-2 outline-none bg-background"
-              >
-                <option value="">Select MoMo network</option>
-                {MOMO_NETWORKS.map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            ) : (
-              <input
-                value={provider} onChange={(e) => setProvider(e.target.value)}
-                className="w-full border-2 border-border focus:border-primary rounded-md px-3 py-2 outline-none"
-                placeholder="Bank name (e.g. GCB Bank)"
-              />
-            )}
-            <p className="text-[11px] text-muted-foreground">The name must match the registered MoMo / bank account name exactly, or the payout will be rejected.</p>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} />
-              Set as default payout account
-            </label>
-            <button
-              onClick={addAccount}
-              disabled={saveAccount.isPending}
-              className="w-full bg-foreground text-background font-bold py-2.5 rounded-md disabled:opacity-60"
-            >
-              {saveAccount.isPending ? "Saving…" : "Save account"}
-            </button>
-          </div>
-        )}
       </section>
 
-      {/* Request withdrawal */}
-      <section className="bg-card border border-border rounded-xl p-4">
-        <h2 className="font-bold flex items-center gap-2"><ArrowDownToLine size={18} /> Request Withdrawal</h2>
-        {accounts.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">Add a payout account above to withdraw your earnings.</p>
-        ) : (
-          <form onSubmit={handleSubmit} className="mt-3 space-y-3">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Amount (max {formatGHC(balance)})</label>
-              <input
-                type="number" min="1" step="0.01" value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full mt-1 border-2 border-border focus:border-primary rounded-md px-3 py-2 outline-none"
-                placeholder="0.00"
-              />
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <StatCard label="In escrow · 48h" value={formatGHC(Number((wallet as any)?.escrow ?? 0))} icon={Clock} color="text-info-ink" />
+        <StatCard label="Withdrawal pending" value={formatGHC(Number(wallet?.pending ?? 0))} icon={Clock} color="text-warning-ink" />
+        <StatCard label="Total earned" value={formatGHC(Number(wallet?.total_earned ?? 0))} icon={TrendingUp} color="text-primary" />
+        <StatCard label="Total withdrawn" value={formatGHC(Number(wallet?.total_withdrawn ?? 0))} icon={ArrowDownToLine} color="text-muted-foreground" />
+      </section>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] xl:items-start">
+        <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
+            <div className="flex items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary"><CreditCard size={19} /></span>
+              <div>
+                <h2 className="text-sm font-bold">Payout accounts</h2>
+                <p className="text-xs text-muted-foreground">Where Kivora sends your withdrawals</p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Funds will be sent to your selected payout account above.
-            </p>
             <button
-              type="submit" disabled={busy || balance <= 0 || !selectedAccount}
-              className="w-full bg-primary text-primary-foreground font-bold py-2.5 rounded-md disabled:opacity-60"
+              type="button"
+              onClick={() => setShowForm((s) => !s)}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold transition hover:bg-muted"
             >
-              {busy ? "Submitting…" : "Request withdrawal"}
+              <Plus size={14} /> {showForm ? "Close" : "Add account"}
             </button>
-          </form>
-        )}
-      </section>
+          </div>
 
-      <section>
-        <h2 className="font-bold mb-2">Withdrawal Requests</h2>
+          {accounts.length > 0 && (
+            <div className="space-y-2 p-4 sm:p-5">
+              {accounts.map((a) => {
+                const active = selectedAccount === a.id;
+                return (
+                  <div key={a.id} className={`rounded-xl border p-3 transition ${active ? "border-primary bg-primary/5 ring-1 ring-primary/15" : "border-border hover:bg-muted/30"}`}>
+                    <div className="flex items-start gap-3">
+                      <button type="button" onClick={() => setSelectedAccount(a.id)} aria-label={`Select ${a.method} payout account`} className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 border-primary">
+                        {active && <span className="h-2.5 w-2.5 rounded-full bg-primary" />}
+                      </button>
+                      <button type="button" onClick={() => setSelectedAccount(a.id)} className="min-w-0 flex-1 text-left">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-bold">{a.account_name}</span>
+                          {a.is_default && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary">Default</span>}
+                          {active && <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold text-success-ink">Selected</span>}
+                        </span>
+                        <span className="mt-1 block text-xs text-muted-foreground">{a.method}{a.provider ? ` · ${a.provider}` : ""} · {a.account_number}</span>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Remove payout account"
+                        onClick={() => {
+                          if (confirm("Remove this payout account?")) {
+                            deleteAccount.mutate(a.id, {
+                              onSuccess: () => { if (selectedAccount === a.id) setSelectedAccount(null); },
+                            });
+                          }
+                        }}
+                        className="rounded-lg p-2 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {(showForm || accounts.length === 0) && (
+            <div className="space-y-3 border-t border-border bg-muted/20 p-4 sm:p-5">
+              <div>
+                <h3 className="text-sm font-bold">{accounts.length ? "Add another account" : "Add your payout account"}</h3>
+                <p className="mt-0.5 text-xs text-muted-foreground">Use the exact name registered with your bank or MoMo provider.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="space-y-1.5 text-xs font-semibold text-muted-foreground">
+                  Payout method
+                  <select value={method} onChange={(e) => { setMethod(e.target.value); setProvider(""); }} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-medium text-foreground outline-none focus:border-primary">
+                    {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </label>
+                <label className="space-y-1.5 text-xs font-semibold text-muted-foreground">
+                  Account holder name
+                  <input value={accountName} onChange={(e) => setAccountName(e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-medium text-foreground outline-none focus:border-primary" placeholder="Full registered name" />
+                </label>
+                <label className="space-y-1.5 text-xs font-semibold text-muted-foreground">
+                  {method === "Mobile Money" ? "MoMo number" : "Bank account number"}
+                  <input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-medium text-foreground outline-none focus:border-primary" placeholder={method === "Mobile Money" ? "024XXXXXXX" : "Account number"} />
+                </label>
+                <label className="space-y-1.5 text-xs font-semibold text-muted-foreground">
+                  {method === "Mobile Money" ? "Mobile network" : "Bank name"}
+                  {method === "Mobile Money" ? (
+                    <select value={provider} onChange={(e) => setProvider(e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-medium text-foreground outline-none focus:border-primary">
+                      <option value="">Select network</option>
+                      {MOMO_NETWORKS.map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  ) : (
+                    <input value={provider} onChange={(e) => setProvider(e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-medium text-foreground outline-none focus:border-primary" placeholder="e.g. GCB Bank" />
+                  )}
+                </label>
+              </div>
+              <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} className="h-4 w-4 accent-primary" />
+                Set as my default payout account
+              </label>
+              <button type="button" onClick={addAccount} disabled={saveAccount.isPending} className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:opacity-60 sm:w-auto">
+                {saveAccount.isPending ? "Saving account…" : "Save payout account"}
+              </button>
+            </div>
+          )}
+        </section>
+
+        <section id="wallet-withdraw" className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-success/10 text-success-ink"><ArrowDownToLine size={19} /></span>
+            <div>
+              <h2 className="text-sm font-bold">Request a withdrawal</h2>
+              <p className="text-xs text-muted-foreground">Send cleared earnings to your account</p>
+            </div>
+          </div>
+          {accounts.length === 0 ? (
+            <p className="mt-4 rounded-xl bg-muted/60 p-3 text-sm text-muted-foreground">Add a payout account first to request a withdrawal.</p>
+          ) : (
+            <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+              <div className="rounded-xl bg-muted/50 p-3">
+                <p className="text-xs font-semibold text-muted-foreground">Available balance</p>
+                <p className="mt-1 text-xl font-extrabold">{formatGHC(balance)}</p>
+              </div>
+              <label className="block space-y-1.5 text-xs font-semibold text-muted-foreground">
+                Withdrawal amount (GHS)
+                <input type="number" min="1" max={balance} step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-12 w-full rounded-xl border border-border bg-background px-3 text-lg font-bold text-foreground outline-none focus:border-primary" placeholder="0.00" />
+              </label>
+              <p className="text-xs leading-relaxed text-muted-foreground">Your request will be reviewed and paid to the selected payout account. You can track its status below.</p>
+              <button type="submit" disabled={busy || balance <= 0 || !selectedAccount} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                {busy ? "Submitting request…" : "Request withdrawal"}
+              </button>
+            </form>
+          )}
+        </section>
+      </div>
+
+      <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="border-b border-border px-4 py-4 sm:px-5">
+          <h2 className="text-sm font-bold">Withdrawal requests</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">Follow the progress of your payout requests.</p>
+        </div>
         {requests?.length ? (
-          <div className="space-y-2">
+          <div className="divide-y divide-border">
             {requests.map((r) => (
-              <div key={r.id} className="bg-card border border-border rounded-lg p-3 flex items-center justify-between">
-                <div>
-                  <p className="font-semibold">{formatGHC(Number(r.amount))}</p>
-                  <p className="text-xs text-muted-foreground">{r.method} · {new Date(r.created_at).toLocaleDateString()}</p>
-                  {r.admin_note && <p className="text-xs text-muted-foreground mt-0.5">Note: {r.admin_note}</p>}
+              <div key={r.id} className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
+                <div className="min-w-0">
+                  <p className="font-bold">{formatGHC(Number(r.amount))}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{r.method} · {new Date(r.created_at).toLocaleDateString()}</p>
+                  {r.admin_note && <p className="mt-1 text-xs text-muted-foreground">Note: {r.admin_note}</p>}
                 </div>
                 <StatusBadge status={r.status} />
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No withdrawal requests yet.</p>
-        )}
+        ) : <p className="px-4 py-8 text-center text-sm text-muted-foreground">No withdrawal requests yet.</p>}
       </section>
 
-      <section>
-        <h2 className="font-bold mb-2">Transaction History</h2>
+      <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="border-b border-border px-4 py-4 sm:px-5">
+          <h2 className="text-sm font-bold">Transaction history</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">Your latest wallet activity, newest first.</p>
+        </div>
         {txns?.length ? (
-          <div className="space-y-1.5">
+          <div className="divide-y divide-border">
             {txns.map((t) => (
-              <div key={t.id} className="flex items-center justify-between text-sm border-b border-border py-2">
-                <div>
-                  <p className="font-medium">{t.description ?? t.type}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(t.created_at).toLocaleString()}</p>
+              <div key={t.id} className="flex items-center gap-3 px-4 py-3 sm:px-5">
+                <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${Number(t.amount) >= 0 ? "bg-success/10 text-success-ink" : "bg-muted text-muted-foreground"}`}>
+                  {Number(t.amount) >= 0 ? <TrendingUp size={16} /> : <ArrowDownToLine size={16} />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">{t.description ?? t.type}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{new Date(t.created_at).toLocaleString()}</p>
                 </div>
-                <span className={Number(t.amount) >= 0 ? "text-success-ink font-semibold" : "text-destructive font-semibold"}>
+                <span className={`shrink-0 text-sm font-extrabold tabular-nums ${Number(t.amount) >= 0 ? "text-success-ink" : "text-foreground"}`}>
                   {Number(t.amount) >= 0 ? "+" : ""}{formatGHC(Number(t.amount))}
                 </span>
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No transactions yet. Earnings appear when orders are delivered.</p>
-        )}
+        ) : <p className="px-4 py-8 text-center text-sm text-muted-foreground">No transactions yet. Earnings appear when orders are delivered.</p>}
       </section>
     </div>
   );
