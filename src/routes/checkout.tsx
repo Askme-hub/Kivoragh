@@ -379,7 +379,7 @@ function Checkout() {
       setMomoOtp("");
       setMomoMsg(res.message ?? "");
       if (res.next === "error") {
-        router.navigate({ to: "/payment/callback", search: { provider: "moolre", order: res.order_id } });
+        router.navigate({ to: "/payment/callback", search: { ref: "", provider: "moolre", order: res.order_id } });
         return;
       }
       setMomoStage(res.next === "otp" ? "otp" : "prompt");
@@ -404,12 +404,12 @@ function Checkout() {
         const r = await checkMomo({ data: { order_id: momoOrder } });
         if (r.status === "paid" || r.status === "failed") {
           if (r.status === "paid") clearCart();
-          router.navigate({ to: "/payment/callback", search: { provider: "moolre", order: momoOrder } });
+          router.navigate({ to: "/payment/callback", search: { ref: "", provider: "moolre", order: momoOrder } });
           return;
         }
       } catch { /* keep waiting; the result page will perform its own verification too */ }
       if (Date.now() - started > 180000) {
-        router.navigate({ to: "/payment/callback", search: { provider: "moolre", order: momoOrder } });
+        router.navigate({ to: "/payment/callback", search: { ref: "", provider: "moolre", order: momoOrder } });
         return;
       }
       setTimeout(tick, 4000);
