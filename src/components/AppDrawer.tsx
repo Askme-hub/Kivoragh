@@ -1,6 +1,3 @@
-import { useSiteContent, telHref, waNumber } from "@/lib/site-content";
-import { InboxBell } from "@/components/InboxBell";
-import { MessageBell } from "@/components/MessageBell";
 import { Link, useRouterState, useRouter } from "@tanstack/react-router";
 import {
   Home,
@@ -21,13 +18,10 @@ import {
   Tag,
   MessageCircle,
 
-  Phone,
-  Truck,
   Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useShop } from "@/lib/store";
 import { useAuth, useIsAdmin } from "@/hooks/use-auth";
 import { useIsSeller } from "@/hooks/use-seller";
 import { useCategories } from "@/lib/categories";
@@ -263,63 +257,32 @@ export function AppDrawer() {
   );
 }
 
-/** Mobile top bar with hamburger + brand + cart + always-visible search pill. */
+/** Minimal mobile shopping header: search first, categories directly below. */
 export function MobileTopBar() {
-  const site = useSiteContent();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const count = useShop((s) => s.cartCount());
   const openSearch = useSearchUI((s) => s.setOpen);
-  const [mounted, setMounted] = useState(false);
-  const { user } = useAuth();
-  useEffect(() => setMounted(true), []);
 
   if (path === "/login") return null;
 
   return (
-    <header className="md:hidden sticky top-0 z-40 shadow-elevated">
-      <div className="brand-band bg-gradient-to-br from-primary via-primary to-flash pb-3">
-        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 pt-3">
-          <AppDrawer />
-          <Link to="/" className="flex min-w-0 items-center gap-2">
-            <img src={kivoraIcon} alt="Kivora" className="h-9 w-9 shrink-0 rounded-xl ring-2 ring-primary-foreground/40" />
-            <span className="min-w-0 leading-none">
-              <span className="block truncate text-lg font-black uppercase italic tracking-tight">Kivora<span className="opacity-80">★</span></span>
-              <span className="mt-0.5 flex items-center gap-1 truncate text-[10px] font-semibold opacity-90">
-                <Truck size={11} /> {site.tagline}
-              </span>
-            </span>
-          </Link>
-          <div className="flex shrink-0 items-center gap-1.5">
-            {mounted && !user ? (
-              <Link to="/login" className="flex h-9 items-center gap-1 rounded-full bg-primary-foreground px-3 text-xs font-black text-primary shadow-soft transition active:scale-95">
-                <LogIn size={14} /> Login
-              </Link>
-            ) : (
-              <>
-                <MessageBell variant="mobile" />
-                <InboxBell />
-              </>
-            )}
-            <Link to="/cart" aria-label="Cart" className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15 transition active:scale-95">
-              <ShoppingCart size={19} />
-              {mounted && count > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1 text-[10px] font-black text-primary">{count}</span>
-              )}
-            </Link>
-          </div>
-        </div>
-        <div className="px-3 pt-3">
-          <button onClick={() => openSearch(true)} className="flex w-full items-center gap-2 rounded-full bg-background py-1 pl-4 pr-1 text-left shadow-soft ring-2 ring-primary-foreground/30 transition active:scale-[0.99]">
-            <Search size={18} className="shrink-0 text-primary" />
-            <span className="flex-1 truncate text-sm text-muted-foreground">Search phones, fashion, more…</span>
-            <span className="rounded-full bg-gradient-to-r from-primary to-flash px-4 py-2 text-xs font-black text-primary-foreground">Search</span>
-          </button>
-        </div>
-        <HeaderChips />
+    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 shadow-sm backdrop-blur md:hidden">
+      <div className="px-3 pt-2.5 pb-2">
+        <button
+          type="button"
+          onClick={() => openSearch(true)}
+          aria-label="Search products on Kivora"
+          className="flex h-11 w-full items-center gap-3 rounded-xl border border-border bg-card px-3.5 text-left shadow-sm transition hover:border-primary/50 active:scale-[0.99]"
+        >
+          <Search size={19} className="shrink-0 text-primary" />
+          <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+            Search products, brands and categories
+          </span>
+          <span className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">
+            Search
+          </span>
+        </button>
       </div>
-      <a href={telHref(site.phone_primary)} className="flex items-center justify-center gap-2 border-b border-border bg-card py-1.5 text-[11px] font-semibold text-foreground">
-        <Phone size={13} className="text-primary" /> Call to Order: <span className="font-black text-primary">{site.phone_primary}</span>
-      </a>
+      <HeaderChips />
     </header>
   );
 }
@@ -330,14 +293,16 @@ export function HeaderChips({ desktop = false }: { desktop?: boolean }) {
   const base = desktop
     ? "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold transition"
     : "flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-[12px] font-bold transition active:scale-95";
-  const soft = desktop ? "bg-muted text-foreground hover:bg-primary-soft hover:text-primary" : "bg-primary-foreground/15 text-primary-foreground";
+  const soft = desktop ? "bg-muted text-foreground hover:bg-primary-soft hover:text-primary" : "border border-border bg-muted text-foreground hover:border-primary/40 hover:text-primary";
   return (
     <div className="overflow-x-auto scrollbar-none">
-      <div className={`flex gap-2 ${desktop ? "py-2.5" : "px-3 pt-2.5"}`}>
-        <a href="/#flash-sales" className={`${base} bg-flash text-flash-foreground`}>
-          <Zap size={13} fill="currentColor" /> Flash Sale
-        </a>
-        <Link to="/categories" className={`${base} ${desktop ? "bg-primary text-primary-foreground" : "bg-primary-foreground text-primary"}`}>
+      <div className={`flex gap-2 ${desktop ? "py-2.5" : "px-3 pb-2.5"}`}>
+{desktop && (
+          <a href="/#flash-sales" className={`${base} bg-flash text-flash-foreground`}>
+            <Zap size={13} fill="currentColor" /> Flash Sale
+          </a>
+        )}
+        <Link to="/categories" className={`${base} bg-primary text-primary-foreground`}>
           <LayoutGrid size={13} /> All
         </Link>
         {categories.slice(0, 12).map((c) => (
