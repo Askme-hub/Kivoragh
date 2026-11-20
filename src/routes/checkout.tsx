@@ -21,6 +21,7 @@ import {
   X,
   Home,
   Building2,
+  Wallet,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { formatGHC, useShop } from "@/lib/store";
@@ -118,6 +119,7 @@ function Checkout() {
   const [momoStage, setMomoStage] = useState<"otp" | "prompt" | "failed" | null>(null);
   const [momoOtp, setMomoOtp] = useState("");
   const [momoMsg, setMomoMsg] = useState("");
+  const [momoAmountDue, setMomoAmountDue] = useState<number | null>(null);
   const placeCOD = useServerFn(placeCODOrder);
   const sendOtp = useServerFn(sendPhoneOTP);
   const verifyOtp = useServerFn(verifyPhoneOTP);
@@ -175,6 +177,8 @@ function Checkout() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saveAsDefault, setSaveAsDefault] = useState(true);
   const [paying, setPaying] = useState(false);
+  const [storeCreditBalance, setStoreCreditBalance] = useState(0);
+  const [useStoreCredit, setUseStoreCredit] = useState(false);
 
   // Pick default address once loaded
   useEffect(() => {
@@ -241,6 +245,27 @@ function Checkout() {
       grand: Math.max(0, itemsTotal + ship - couponDiscount),
     };
   }, [deliveryType, itemsTotal, sellerDelivery, appliedCoupon, selectedRegion, zones]);
+
+  const appliedStoreCredit = useStoreCredit ? Math.min(storeCreditBalance, grand) : 0;
+  const amountDue = Math.max(0, grand - appliedStoreCredit);
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!active || !data.user) return;
+      const { data: wallet, error } = await (supabase as any)
+        .from("marketing_wallets")
+        .select("promotional_balance")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+      if (active && !error) {
+        const balance = Number(wallet?.promotional_balance ?? 0);
+        setStoreCreditBalance(balance);
+        setUseStoreCredit(balance > 0);
+      }
+    });
+    return () => { active = false; };
+  }, []);
 
   const applyCoupon = async () => {
     const code = couponInput.trim();
@@ -329,7 +354,7 @@ function Checkout() {
     ? "Add a delivery address to continue"
     : deliveryType === "pickup" && !pickupStation
       ? "Choose a pickup station to continue"
-      : paymentMethod === "online" && momoPhone.replace(/\D/g, "").length < 9
+      : paymentMethod === "online" && amountDue > 0 && momoPhone.replace(/\D/g, "").length < 9
         ? "Enter your Mobile Money number"
       : paymentMethod === "cod" && !codAllowed
         ? `Pay on Delivery is only for shops in ${selectedRegion}`
@@ -379,17 +404,25 @@ function Checkout() {
             delivery: deliveryPayload,
             items: itemsPayload,
             coupon_code: appliedCoupon?.code,
+            use_store_credit: useStoreCredit,
           },
         });
         clearCart();
-        toast.success("Order placed! Pay on delivery.");
+        toast.success(res.paid_with_store_credit ? "Order paid with Kivora Store Credit!" : "Order placed! Pay on delivery.");
         router.navigate({ to: "/orders/$id", params: { id: res.order_id } });
         return;
       }
       const res = await startMomo({
-        data: { delivery: deliveryPayload, items: itemsPayload, coupon_code: appliedCoupon?.code, channel: momoNet, payer: momoPhone },
+        data: { delivery: deliveryPayload, items: itemsPayload, coupon_code: appliedCoupon?.code, use_store_credit: useStoreCredit, channel: momoNet, payer: momoPhone },
       });
+      if (res.next === "paid") {
+        clearCart();
+        toast.success("Order paid with Kivora Store Credit!");
+        router.navigate({ to: "/orders/$id", params: { id: res.order_id } });
+        return;
+      }
       setMomoOrder(res.order_id);
+      setMomoAmountDue(Number(res.amount_due ?? amountDue));
       setMomoOtp("");
       setMomoMsg(res.message ?? "");
       if (res.next === "error") {
@@ -507,21 +540,34 @@ function Checkout() {
             <span className="font-semibold">−{formatGHC(discount)}</span>
           </div>
         )}
+        {storeCreditBalance > 0 && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input type="checkbox" checked={useStoreCredit} onChange={(e) => setUseStoreCredit(e.target.checked)} className="mt-1 h-4 w-4 accent-primary" />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2 text-sm font-semibold"><Wallet size={16} className="text-primary" /> Use Kivora Store Credit</span>
+                <span className="mt-1 block text-xs text-muted-foreground">Available balance: {formatGHC(storeCreditBalance)} · Cannot be withdrawn or transferred.</span>
+              </span>
+            </label>
+            {appliedStoreCredit > 0 && <div className="mt-2 flex justify-between border-t border-primary/10 pt-2 text-sm"><span className="text-muted-foreground">Credit applied</span><span className="font-semibold text-success">−{formatGHC(appliedStoreCredit)}</span></div>}
+          </div>
+        )}
       </div>
 
       <div className="h-px bg-border" />
 
       <div className="flex items-center justify-between">
-        <span className="text-base font-semibold">Total</span>
+        <span className="text-base font-semibold">Order total</span>
         <span className="text-xl font-bold tracking-normal">{formatGHC(grand)}</span>
       </div>
+      {appliedStoreCredit > 0 && <div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">Remaining to pay</span><span className="font-bold text-primary">{formatGHC(amountDue)}</span></div>}
 
       <div className="flex items-start gap-2 rounded-lg bg-muted/60 px-3 py-2.5">
         <ShieldCheck size={16} className="mt-0.5 shrink-0 text-success" />
         <p className="text-xs leading-relaxed text-muted-foreground">
           {paymentMethod === "cod"
-            ? "No payment now. Pay the courier in cash or MoMo when your order arrives."
-            : "You approve the payment with your MoMo PIN on your own phone. Secured by Moolre."}
+            ? (appliedStoreCredit > 0 ? `Your Store Credit is applied. Pay ${formatGHC(amountDue)} to the courier on delivery.` : "No payment now. Pay the courier in cash or MoMo when your order arrives.")
+            : (amountDue <= 0 ? "Your order is fully covered by Kivora Store Credit." : "You approve the remaining payment with your MoMo PIN on your own phone. Secured by Moolre.")}
         </p>
       </div>
     </div>
@@ -548,7 +594,7 @@ function Checkout() {
                 <div><p className="text-xl font-extrabold">Approve on your phone</p><p className="mt-1 text-sm text-muted-foreground">{momoMsg || "A payment request will appear on your phone. Check the amount before approving."}</p></div>
                 <div className="rounded-2xl border border-border bg-muted/50 p-4">
                   <p className="text-xs font-medium text-muted-foreground">Amount to approve</p>
-                  <p className="mt-1 text-3xl font-black tracking-tight">{formatGHC(grand)}</p>
+                  <p className="mt-1 text-3xl font-black tracking-tight">{formatGHC(momoAmountDue ?? amountDue)}</p>
                   <div className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold"><NetworkLogo network={momoNet} /><span>{momoNet === "MTN" ? "MTN MoMo" : momoNet === "TELECEL" ? "Telecel Cash" : "AT Money"}</span><span className="text-muted-foreground">·</span><span>{momoPhone}</span></div>
                 </div>
                 <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/5 px-3 py-3 text-xs font-semibold text-primary"><Loader2 size={15} className="animate-spin" /> Waiting for your approval</div>
@@ -861,7 +907,7 @@ function Checkout() {
                       <div>
                         <Label htmlFor="momo-phone" className="text-xs">Mobile Money number</Label>
                         <Input id="momo-phone" inputMode="tel" placeholder="024 000 0000" value={momoPhone} maxLength={16} onChange={(e) => { setMomoPhone(e.target.value); if (e.target.value.replace(/\D/g, "").length >= 3) setMomoNet(guessNet(e.target.value)); }} className="mt-1 h-11" />
-                        <div className="mt-2 flex items-start gap-2 rounded-lg bg-muted/60 px-3 py-2.5 text-[11px] leading-relaxed text-muted-foreground"><ShieldCheck size={14} className="mt-0.5 shrink-0 text-success" /><span>A payment request for {formatGHC(grand)} will be sent to this number. Confirm the amount on your phone before entering your PIN. Kivora will never ask you for your PIN.</span></div>
+                        <div className="mt-2 flex items-start gap-2 rounded-lg bg-muted/60 px-3 py-2.5 text-[11px] leading-relaxed text-muted-foreground"><ShieldCheck size={14} className="mt-0.5 shrink-0 text-success" /><span>A payment request for {formatGHC(amountDue)} will be sent to this number. Confirm the amount on your phone before entering your PIN. Kivora will never ask you for your PIN.</span></div>
                       </div>
                     </div>
                   )}
@@ -1031,7 +1077,7 @@ function Checkout() {
                 }}>Continue to Payment <ChevronRight size={16} /></Button>
               ) : (
                 <Button type="button" onClick={pay} disabled={paying || !!blocker} className="h-12 w-full rounded-xl text-sm font-bold">
-                  {paying ? <><Loader2 size={18} className="animate-spin" /> Processing…</> : <><Lock size={16} /> {paymentMethod === "cod" ? "Place Order · Pay on Delivery" : `Pay ${formatGHC(grand)} with MoMo`}</>}
+                  {paying ? <><Loader2 size={18} className="animate-spin" /> Processing…</> : <><Lock size={16} /> {paymentMethod === "cod" ? (amountDue <= 0 ? "Place Order · Store Credit" : `Place Order · Pay ${formatGHC(amountDue)} on Delivery`) : `Pay ${formatGHC(amountDue)} with MoMo`}</>}
                 </Button>
               )}
 
@@ -1046,14 +1092,14 @@ function Checkout() {
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 shadow-lg backdrop-blur pb-[env(safe-area-inset-bottom)] md:hidden">
         <div className="mx-auto max-w-md px-4 py-3">
-          <div className="mb-3 flex items-center justify-between"><span className="text-sm text-muted-foreground">Total ({itemCount} items)</span><span className="text-lg font-bold">{formatGHC(grand)}</span></div>
+          <div className="mb-3 flex items-center justify-between"><span className="text-sm text-muted-foreground">Amount due ({itemCount} items)</span><span className="text-lg font-bold">{formatGHC(amountDue)}</span></div>
           {mobileStep === "delivery" ? <Button className="h-12 w-full rounded-xl text-base font-bold shadow-md" disabled={paying || saveAddress.isPending} onClick={() => {
             if (!selected || showForm) { toast.info("Save your delivery address to continue"); document.getElementById("address-section")?.scrollIntoView({ behavior: "smooth" }); return; }
             if (deliveryType === "pickup" && !pickupStation) { toast.info("Choose a pickup station to continue"); document.getElementById("delivery-section")?.scrollIntoView({ behavior: "smooth" }); return; }
             setMobileStep("payment"); window.scrollTo({ top: 0, behavior: "instant" });
           }}>Continue to Payment<ChevronRight size={16} /></Button> : <>
             {blocker && <p className="mb-2 text-xs text-danger-ink">{blocker}</p>}
-            <Button onClick={pay} disabled={paying || !!blocker} className="h-12 w-full rounded-xl text-base font-bold shadow-md">{paying ? <><Loader2 size={18} className="animate-spin" />Processing…</> : <><Lock size={16} />{paymentMethod === "cod" ? "Confirm Order · Pay on Delivery" : `Pay ${formatGHC(grand)} with MoMo`}</>}</Button>
+            <Button onClick={pay} disabled={paying || !!blocker} className="h-12 w-full rounded-xl text-base font-bold shadow-md">{paying ? <><Loader2 size={18} className="animate-spin" />Processing…</> : <><Lock size={16} />{paymentMethod === "cod" ? (amountDue <= 0 ? "Confirm Order · Store Credit" : `Confirm Order · Pay ${formatGHC(amountDue)} on Delivery`) : `Pay ${formatGHC(amountDue)} with MoMo`}</>}</Button>
           </>}
         </div>
       </div>

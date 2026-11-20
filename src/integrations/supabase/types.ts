@@ -679,6 +679,7 @@ export type Database = {
           refund_status: string
           refunded_at: string | null
           shipping_fee: number
+          store_credit_applied: number
           status: string
           total: number
           user_id: string
@@ -710,6 +711,7 @@ export type Database = {
           refund_status?: string
           refunded_at?: string | null
           shipping_fee?: number
+          store_credit_applied?: number
           status?: string
           total: number
           user_id: string
@@ -741,6 +743,7 @@ export type Database = {
           refund_status?: string
           refunded_at?: string | null
           shipping_fee?: number
+          store_credit_applied?: number
           status?: string
           total?: number
           user_id?: string
