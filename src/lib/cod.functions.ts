@@ -221,7 +221,7 @@ if (total <= 0) throw new Error("Invalid cart total");
     if (order.delivery_phone) {
       await trySendSMS(
         order.delivery_phone,
-        `KIVORA GH\nOrder #${orderRef} PLACED (Pay on Delivery)${shopNames ? ` from ${shopNames}` : ""}.\nItems: ${itemLines}\nAmount due on delivery: GH${"\u20B5"} ${Number(order.total).toFixed(2)}\n${dest}\nPlease have the exact amount (cash or MoMo) ready for the courier. Track it in the Kivora app.`
+        `KIVORA GH\nOrder #${orderRef} PLACED (Pay on Delivery)${shopNames ? ` from ${shopNames}` : ""}.\nItems: ${itemLines}\nAmount due on delivery: GH${"\u20B5"} ${amountDue.toFixed(2)}\n${dest}\nPlease have the exact amount (cash or MoMo) ready for the courier. Track it in the Kivora app.`
       );
     }
 
