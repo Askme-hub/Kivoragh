@@ -26,7 +26,8 @@ BEGIN
     (referral_code_id, referrer_user_id, referred_user_id, referred_user_type,
      event_type, status, source)
   VALUES
-    (v_ref.id, v_ref.user_id, _referred_user_id, v_ref.user_type,
+    (v_ref.id, v_ref.user_id, _referred_user_id,
+     CASE WHEN public.has_role(_referred_user_id, 'seller') THEN 'seller' ELSE 'customer' END,
      'registration', 'pending', left(coalesce(nullif(_source, ''), 'signup'), 40))
   ON CONFLICT (referred_user_id) DO NOTHING;
 END $$;
