@@ -21,6 +21,7 @@ import {
   X,
   Home,
   Building2,
+  Wallet,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { formatGHC, useShop } from "@/lib/store";
@@ -175,6 +176,8 @@ function Checkout() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saveAsDefault, setSaveAsDefault] = useState(true);
   const [paying, setPaying] = useState(false);
+  const [storeCreditBalance, setStoreCreditBalance] = useState(0);
+  const [useStoreCredit, setUseStoreCredit] = useState(false);
 
   // Pick default address once loaded
   useEffect(() => {
@@ -241,6 +244,27 @@ function Checkout() {
       grand: Math.max(0, itemsTotal + ship - couponDiscount),
     };
   }, [deliveryType, itemsTotal, sellerDelivery, appliedCoupon, selectedRegion, zones]);
+
+  const appliedStoreCredit = useStoreCredit ? Math.min(storeCreditBalance, grand) : 0;
+  const amountDue = Math.max(0, grand - appliedStoreCredit);
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!active || !data.user) return;
+      const { data: wallet, error } = await (supabase as any)
+        .from("marketing_wallets")
+        .select("promotional_balance")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+      if (active && !error) {
+        const balance = Number(wallet?.promotional_balance ?? 0);
+        setStoreCreditBalance(balance);
+        setUseStoreCredit(balance > 0);
+      }
+    });
+    return () => { active = false; };
+  }, []);
 
   const applyCoupon = async () => {
     const code = couponInput.trim();
@@ -379,16 +403,23 @@ function Checkout() {
             delivery: deliveryPayload,
             items: itemsPayload,
             coupon_code: appliedCoupon?.code,
+            use_store_credit: useStoreCredit,
           },
         });
         clearCart();
-        toast.success("Order placed! Pay on delivery.");
+        toast.success(res.paid_with_store_credit ? "Order paid with Kivora Store Credit!" : "Order placed! Pay on delivery.");
         router.navigate({ to: "/orders/$id", params: { id: res.order_id } });
         return;
       }
       const res = await startMomo({
-        data: { delivery: deliveryPayload, items: itemsPayload, coupon_code: appliedCoupon?.code, channel: momoNet, payer: momoPhone },
+        data: { delivery: deliveryPayload, items: itemsPayload, coupon_code: appliedCoupon?.code, use_store_credit: useStoreCredit, channel: momoNet, payer: momoPhone },
       });
+      if (res.next === "paid") {
+        clearCart();
+        toast.success("Order paid with Kivora Store Credit!");
+        router.navigate({ to: "/orders/$id", params: { id: res.order_id } });
+        return;
+      }
       setMomoOrder(res.order_id);
       setMomoOtp("");
       setMomoMsg(res.message ?? "");
@@ -861,7 +892,7 @@ function Checkout() {
                       <div>
                         <Label htmlFor="momo-phone" className="text-xs">Mobile Money number</Label>
                         <Input id="momo-phone" inputMode="tel" placeholder="024 000 0000" value={momoPhone} maxLength={16} onChange={(e) => { setMomoPhone(e.target.value); if (e.target.value.replace(/\D/g, "").length >= 3) setMomoNet(guessNet(e.target.value)); }} className="mt-1 h-11" />
-                        <div className="mt-2 flex items-start gap-2 rounded-lg bg-muted/60 px-3 py-2.5 text-[11px] leading-relaxed text-muted-foreground"><ShieldCheck size={14} className="mt-0.5 shrink-0 text-success" /><span>A payment request for {formatGHC(grand)} will be sent to this number. Confirm the amount on your phone before entering your PIN. Kivora will never ask you for your PIN.</span></div>
+                        <div className="mt-2 flex items-start gap-2 rounded-lg bg-muted/60 px-3 py-2.5 text-[11px] leading-relaxed text-muted-foreground"><ShieldCheck size={14} className="mt-0.5 shrink-0 text-success" /><span>A payment request for {formatGHC(amountDue)} will be sent to this number. Confirm the amount on your phone before entering your PIN. Kivora will never ask you for your PIN.</span></div>
                       </div>
                     </div>
                   )}
@@ -1031,7 +1062,7 @@ function Checkout() {
                 }}>Continue to Payment <ChevronRight size={16} /></Button>
               ) : (
                 <Button type="button" onClick={pay} disabled={paying || !!blocker} className="h-12 w-full rounded-xl text-sm font-bold">
-                  {paying ? <><Loader2 size={18} className="animate-spin" /> Processing…</> : <><Lock size={16} /> {paymentMethod === "cod" ? "Place Order · Pay on Delivery" : `Pay ${formatGHC(grand)} with MoMo`}</>}
+                  {paying ? <><Loader2 size={18} className="animate-spin" /> Processing…</> : <><Lock size={16} /> {paymentMethod === "cod" ? (amountDue <= 0 ? "Place Order · Store Credit" : `Place Order · Pay ${formatGHC(amountDue)} on Delivery`) : `Pay ${formatGHC(amountDue)} with MoMo`}</>}
                 </Button>
               )}
 
@@ -1046,7 +1077,7 @@ function Checkout() {
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 shadow-lg backdrop-blur pb-[env(safe-area-inset-bottom)] md:hidden">
         <div className="mx-auto max-w-md px-4 py-3">
-          <div className="mb-3 flex items-center justify-between"><span className="text-sm text-muted-foreground">Total ({itemCount} items)</span><span className="text-lg font-bold">{formatGHC(grand)}</span></div>
+          <div className="mb-3 flex items-center justify-between"><span className="text-sm text-muted-foreground">Total ({itemCount} items)</span><span className="text-lg font-bold">{formatGHC(amountDue)}</span></div>
           {mobileStep === "delivery" ? <Button className="h-12 w-full rounded-xl text-base font-bold shadow-md" disabled={paying || saveAddress.isPending} onClick={() => {
             if (!selected || showForm) { toast.info("Save your delivery address to continue"); document.getElementById("address-section")?.scrollIntoView({ behavior: "smooth" }); return; }
             if (deliveryType === "pickup" && !pickupStation) { toast.info("Choose a pickup station to continue"); document.getElementById("delivery-section")?.scrollIntoView({ behavior: "smooth" }); return; }
