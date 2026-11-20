@@ -31,14 +31,6 @@ function Account() {
       .then(({ data, error }: any) => { if (active && !error) setStoreCredit(Number(data?.promotional_balance ?? 0)); });
     return () => { active = false; };
   }, [user?.id]);
-  const [storeCredit, setStoreCredit] = useState(0);
-  useEffect(() => {
-    if (!user?.id) { setStoreCredit(0); return; }
-    let active = true;
-    (supabase as any).from("marketing_wallets").select("promotional_balance").eq("user_id", user.id).maybeSingle()
-      .then(({ data, error }: any) => { if (active && !error) setStoreCredit(Number(data?.promotional_balance ?? 0)); });
-    return () => { active = false; };
-  }, [user?.id]);
   const avatarUrl =
     profile?.avatar_url ?? (user?.user_metadata?.avatar_url as string | undefined) ?? null;
 
