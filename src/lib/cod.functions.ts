@@ -36,6 +36,7 @@ export const placeCODOrder = createServerFn({ method: "POST" })
         items: z.array(ItemSchema).min(1).max(100),
         delivery: DeliverySchema,
         coupon_code: z.string().trim().max(50).optional(),
+        use_store_credit: z.boolean().optional().default(false),
       })
       .parse(input)
   )
@@ -169,6 +170,25 @@ if (total <= 0) throw new Error("Invalid cart total");
       throw new Error(ie.message);
     }
 
+    let storeCreditApplied = 0;
+    let amountDue = Number(order.total);
+    if (data.use_store_credit) {
+      const { data: creditRows, error: creditError } = await (context.supabase as any)
+        .rpc("apply_store_credit_to_order", { _order_id: order.id });
+      if (creditError) {
+        await supabaseAdmin.from("orders").delete().eq("id", order.id);
+        throw new Error(creditError.message || "Could not apply Kivora Store Credit");
+      }
+      const credit = Array.isArray(creditRows) ? creditRows[0] : creditRows;
+      storeCreditApplied = Number(credit?.applied ?? 0);
+      amountDue = Number(credit?.amount_due ?? order.total);
+    }
+    if (amountDue <= 0) {
+      const { finalizePaidOrder } = await import("./paid-order.server");
+      await finalizePaidOrder(order.id, Number(order.total));
+      return { order_id: order.id, order_number: order.order_number ?? order.id.slice(0, 8), store_credit_applied: storeCreditApplied, amount_due: 0, paid_with_store_credit: true };
+    }
+
     const orderRef = order.order_number ?? order.id.slice(0, 8);
 
     // Record the coupon use (best-effort)
@@ -181,7 +201,7 @@ if (total <= 0) throw new Error("Invalid cart total");
     await supabaseAdmin.from("inbox_messages").insert({
       user_id: order.user_id,
       title: `Order #${orderRef} placed`,
-      body: `Thank you! Your Pay on Delivery order of ${order.item_count} item(s) totalling GH₵ ${Number(order.total).toFixed(2)} has been received. Please have the amount ready to pay the courier on delivery.`,
+      body: `Thank you! Your Pay on Delivery order of ${order.item_count} item(s) totalling GH₵ ${Number(order.total).toFixed(2)} has been received. Amount due to the courier: GH₵ ${amountDue.toFixed(2)}.`,
     });
 
     // SMS notifications (best-effort, never block)
@@ -239,5 +259,5 @@ if (total <= 0) throw new Error("Invalid cart total");
 
     const { flushPushNotifications } = await import("./push.server");
     await flushPushNotifications();
-    return { order_id: order.id, order_number: orderRef };
+    return { order_id: order.id, order_number: orderRef, store_credit_applied: storeCreditApplied, amount_due: amountDue, paid_with_store_credit: false };
   });
