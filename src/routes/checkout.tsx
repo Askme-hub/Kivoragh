@@ -531,7 +531,7 @@ function Checkout() {
               <div className="space-y-5 text-center">
                 <div className="mx-auto flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-primary"><ShieldCheck size={15} /> Kivora secure payment</div>
                 <div className="relative mx-auto flex h-24 w-24 items-center justify-center"><span className="absolute inset-0 animate-ping rounded-full bg-primary/15" /><div className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-primary text-primary-foreground shadow-lg"><Smartphone size={34} /></div></div>
-                <div><p className="text-xl font-extrabold">Approve on your phone</p><p className="mt-1 text-sm text-muted-foreground">Your payment request is on its way.</p></div>
+                <div><p className="text-xl font-extrabold">Approve on your phone</p><p className="mt-1 text-sm text-muted-foreground">{momoMsg || "A payment request has been sent to your phone."}</p></div>
                 <div className="rounded-2xl border border-border bg-muted/50 p-4">
                   <p className="text-xs font-medium text-muted-foreground">Amount to approve</p>
                   <p className="mt-1 text-3xl font-black tracking-tight">{formatGHC(grand)}</p>
