@@ -167,8 +167,8 @@ BEGIN
       IF v_credit_net > 0 THEN
         NEW.escrow_release_at := now() + interval '48 hours';
         NEW.escrow_released := false;
-        INSERT INTO public.seller_wallets (user_id, escrow, commission_paid)
-        VALUES (NEW.seller_id, v_credit_net, v_commission)
+        INSERT INTO public.seller_wallets (user_id, balance, escrow, commission_paid)
+        VALUES (NEW.seller_id, -v_cash_commission, v_credit_net, v_commission)
         ON CONFLICT (user_id) DO UPDATE SET
           escrow = public.seller_wallets.escrow + v_credit_net,
           balance = public.seller_wallets.balance - v_cash_commission,
