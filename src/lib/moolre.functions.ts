@@ -49,7 +49,14 @@ export const startMoolrePayment = createServerFn({ method: "POST" })
     const { order, total } = await createPendingOnlineOrder(context.userId, data as any);
     const reference = `KV-${order.id.replace(/-/g, "").slice(0, 12)}-${Date.now()}`;
     await supabaseAdmin.from("orders").update({ payment_reference: reference, payment_method: "online" } as any).eq("id", order.id);
-    const r = await moolreCollect({ channel: data.channel, payer: data.payer, amount: Number(total), externalref: reference });
+    let r: { next: "otp" | "prompt" | "error"; message?: string };
+    try {
+      r = await moolreCollect({ channel: data.channel, payer: data.payer, amount: Number(total), externalref: reference });
+    } catch {
+      // A network timeout is ambiguous: the provider may have received the request.
+      // Keep the order pending and let the status checker confirm it before retrying.
+      return { order_id: order.id, next: "prompt" as const, message: "We're checking your payment request. Please wait for confirmation before trying again." };
+    }
     if (r.next === "error") {
       await supabaseAdmin.from("orders").update({ payment_status: "failed" }).eq("id", order.id);
       return { order_id: order.id, next: "error" as const, message: r.message ?? "The payment request could not be started." };
