@@ -31,6 +31,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import kivoraIcon from "@/assets/kivora-icon.png";
 import { UserAvatar } from "@/components/UserAvatar";
 import { InstallAppButton } from "@/components/InstallAppButton";
+import { MessageBell } from "@/components/MessageBell";
 import { useUnreadChatCount } from "@/lib/messages";
 
 const accountItems = [
@@ -260,26 +261,32 @@ export function AppDrawer() {
 export function MobileTopBar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const router = useRouter();
+  const { user } = useAuth();
 
   if (path === "/login" || path === "/search") return null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 shadow-sm backdrop-blur md:hidden">
-      <div className="px-3 pt-2.5 pb-2">
+      <div className="flex items-center gap-2 px-3 pt-2.5 pb-2">
         <button
           type="button"
           onClick={() => router.navigate({ to: "/search", search: { q: "" } })}
           aria-label="Search products on Kivora"
-          className="flex h-14 w-full items-center gap-3 rounded-2xl border-2 border-primary/25 bg-card px-4 text-left shadow-[0_5px_18px_-12px_hsl(var(--primary)/0.45)] transition hover:border-primary/50 active:scale-[0.99]"
+          className="flex h-14 min-w-0 flex-1 items-center gap-3 rounded-2xl border-2 border-primary/25 bg-card px-3.5 text-left shadow-[0_5px_18px_-12px_hsl(var(--primary)/0.45)] transition hover:border-primary/50 active:scale-[0.99]"
         >
           <Search size={22} strokeWidth={2.3} className="shrink-0 text-primary" />
           <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-muted-foreground">
             Search products, brands and categories
           </span>
-          <span className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">
+          <span className="rounded-xl bg-primary px-3.5 py-2 text-sm font-bold text-primary-foreground">
             Search
           </span>
         </button>
+        {user && (
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5">
+            <MessageBell variant="mobile" />
+          </div>
+        )}
       </div>
       <HeaderChips />
     </header>
