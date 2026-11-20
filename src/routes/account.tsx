@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
   MessageCircle, MessageSquare, Info, Package, Mail, Star,
-  Ticket, Heart, Store, History, Search as SearchIcon, ChevronRight, Wallet, Shield, Settings, Gift,
+  Ticket, Heart, Store, History, Search as SearchIcon, ChevronRight, Wallet, Shield, Settings, Gift, Gift,
 } from "lucide-react";
 import { useAuth, useIsAdmin } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
@@ -68,6 +68,7 @@ function Account() {
     { icon: Store, label: "Seller Hub", to: "/seller" },
     { icon: Star, label: "Ratings & Reviews", to: "/my-reviews" },
     { icon: Ticket, label: "Vouchers", to: "/vouchers" },
+    { icon: Gift, label: "Invite & Earn", to: "/referrals" },
     { icon: Gift, label: "Invite & Earn", to: "/referrals" },
     { icon: History, label: "Recently Viewed", to: "/recently-viewed" },
   ];
