@@ -120,6 +120,7 @@ ALTER TABLE public.marketing_wallets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.marketing_wallet_transactions ENABLE ROW LEVEL SECURITY;
 
 GRANT SELECT ON public.marketing_campaigns TO anon, authenticated;
+GRANT INSERT, UPDATE, DELETE ON public.marketing_campaigns, public.referral_settings TO authenticated;
 GRANT SELECT ON public.campaign_events TO authenticated;
 GRANT SELECT ON public.referral_codes TO authenticated;
 GRANT SELECT ON public.referral_events TO authenticated;
