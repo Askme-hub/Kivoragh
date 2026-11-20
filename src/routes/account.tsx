@@ -4,6 +4,7 @@ import {
   Ticket, Heart, Store, History, Search as SearchIcon, ChevronRight, Wallet, Shield, Settings,
 } from "lucide-react";
 import { useAuth, useIsAdmin } from "@/hooks/use-auth";
+import { useEffect, useState } from "react";
 import { useProfile } from "@/lib/profile";
 import { useIsSeller } from "@/hooks/use-seller";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,14 @@ function Account() {
   const { data: isAdmin } = useIsAdmin(user);
   const { data: isSeller } = useIsSeller(user);
   const { data: profile } = useProfile(user?.id);
+  const [storeCredit, setStoreCredit] = useState(0);
+  useEffect(() => {
+    if (!user?.id) { setStoreCredit(0); return; }
+    let active = true;
+    (supabase as any).from("marketing_wallets").select("promotional_balance").eq("user_id", user.id).maybeSingle()
+      .then(({ data, error }: any) => { if (active && !error) setStoreCredit(Number(data?.promotional_balance ?? 0)); });
+    return () => { active = false; };
+  }, [user?.id]);
   const avatarUrl =
     profile?.avatar_url ?? (user?.user_metadata?.avatar_url as string | undefined) ?? null;
 
@@ -90,7 +99,7 @@ function Account() {
         </div>
         <div className="flex items-center gap-2 mt-4 rounded-2xl bg-muted px-4 py-3">
           <Wallet size={22} className="text-primary" />
-          <p className="text-primary font-semibold text-sm">Kivora store credit balance: GH₵ 0</p>
+          <p className="text-primary font-semibold text-sm">Kivora Store Credit: GH₵ {storeCredit.toFixed(2)}</p>
         </div>
       </div>
 
