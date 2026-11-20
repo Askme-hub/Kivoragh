@@ -52,7 +52,7 @@ export const startMoolrePayment = createServerFn({ method: "POST" })
     const r = await moolreCollect({ channel: data.channel, payer: data.payer, amount: Number(total), externalref: reference });
     if (r.next === "error") {
       await supabaseAdmin.from("orders").update({ payment_status: "failed" }).eq("id", order.id);
-      throw new Error(r.message);
+      return { order_id: order.id, next: "error" as const, message: r.message ?? "The payment request could not be started." };
     }
     return { order_id: order.id, next: r.next, message: r.message };
   });
@@ -81,6 +81,7 @@ export const checkMoolrePayment = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const order = await ownOrder(data.order_id, context.userId);
     if (order.payment_status === "paid") return { status: "paid" as const };
+    if (order.payment_status === "failed") return { status: "failed" as const, reason: "This payment request was not completed. Return to checkout to start a new payment." };
     const { moolreStatus } = await import("./moolre.server");
     const s = await moolreStatus(order.payment_reference!);
     if (s.txstatus === 1) {
