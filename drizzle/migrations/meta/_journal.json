@@ -197,6 +197,13 @@
       "when": 1795184000000,
       "tag": "0027_marketing_referrals_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1795186500000,
+      "tag": "0028_kivora_store_credit",
+      "breakpoints": true
     }
   ]
 }
