@@ -293,16 +293,16 @@ export function HeaderChips({ desktop = false }: { desktop?: boolean }) {
   const base = desktop
     ? "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold transition"
     : "flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-[12px] font-bold transition active:scale-95";
-  const soft = desktop ? "bg-muted text-foreground hover:bg-primary-soft hover:text-primary" : "bg-primary-foreground/15 text-primary-foreground";
+  const soft = desktop ? "bg-muted text-foreground hover:bg-primary-soft hover:text-primary" : "border border-border bg-muted text-foreground hover:border-primary/40 hover:text-primary";
   return (
     <div className="overflow-x-auto scrollbar-none">
-      <div className={`flex gap-2 ${desktop ? "py-2.5" : "px-3 pt-2.5"}`}>
+      <div className={`flex gap-2 ${desktop ? "py-2.5" : "px-3 pb-2.5"}`}>
 {desktop && (
           <a href="/#flash-sales" className={`${base} bg-flash text-flash-foreground`}>
             <Zap size={13} fill="currentColor" /> Flash Sale
           </a>
         )}
-        <Link to="/categories" className={`${base} ${desktop ? "bg-primary text-primary-foreground" : "bg-primary-foreground text-primary"}`}>
+        <Link to="/categories" className={`${base} bg-primary text-primary-foreground`}>
           <LayoutGrid size={13} /> All
         </Link>
         {categories.slice(0, 12).map((c) => (
