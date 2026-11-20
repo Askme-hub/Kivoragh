@@ -538,21 +538,34 @@ function Checkout() {
             <span className="font-semibold">−{formatGHC(discount)}</span>
           </div>
         )}
+        {storeCreditBalance > 0 && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input type="checkbox" checked={useStoreCredit} onChange={(e) => setUseStoreCredit(e.target.checked)} className="mt-1 h-4 w-4 accent-primary" />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2 text-sm font-semibold"><Wallet size={16} className="text-primary" /> Use Kivora Store Credit</span>
+                <span className="mt-1 block text-xs text-muted-foreground">Available balance: {formatGHC(storeCreditBalance)} · Cannot be withdrawn or transferred.</span>
+              </span>
+            </label>
+            {appliedStoreCredit > 0 && <div className="mt-2 flex justify-between border-t border-primary/10 pt-2 text-sm"><span className="text-muted-foreground">Credit applied</span><span className="font-semibold text-success">−{formatGHC(appliedStoreCredit)}</span></div>}
+          </div>
+        )}
       </div>
 
       <div className="h-px bg-border" />
 
       <div className="flex items-center justify-between">
-        <span className="text-base font-semibold">Total</span>
+        <span className="text-base font-semibold">Order total</span>
         <span className="text-xl font-bold tracking-normal">{formatGHC(grand)}</span>
       </div>
+      {appliedStoreCredit > 0 && <div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">Remaining to pay</span><span className="font-bold text-primary">{formatGHC(amountDue)}</span></div>}
 
       <div className="flex items-start gap-2 rounded-lg bg-muted/60 px-3 py-2.5">
         <ShieldCheck size={16} className="mt-0.5 shrink-0 text-success" />
         <p className="text-xs leading-relaxed text-muted-foreground">
           {paymentMethod === "cod"
-            ? "No payment now. Pay the courier in cash or MoMo when your order arrives."
-            : "You approve the payment with your MoMo PIN on your own phone. Secured by Moolre."}
+            ? (appliedStoreCredit > 0 ? `Your Store Credit is applied. Pay ${formatGHC(amountDue)} to the courier on delivery.` : "No payment now. Pay the courier in cash or MoMo when your order arrives.")
+            : (amountDue <= 0 ? "Your order is fully covered by Kivora Store Credit." : "You approve the remaining payment with your MoMo PIN on your own phone. Secured by Moolre.")}
         </p>
       </div>
     </div>
@@ -1077,14 +1090,14 @@ function Checkout() {
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 shadow-lg backdrop-blur pb-[env(safe-area-inset-bottom)] md:hidden">
         <div className="mx-auto max-w-md px-4 py-3">
-          <div className="mb-3 flex items-center justify-between"><span className="text-sm text-muted-foreground">Total ({itemCount} items)</span><span className="text-lg font-bold">{formatGHC(amountDue)}</span></div>
+          <div className="mb-3 flex items-center justify-between"><span className="text-sm text-muted-foreground">Amount due ({itemCount} items)</span><span className="text-lg font-bold">{formatGHC(amountDue)}</span></div>
           {mobileStep === "delivery" ? <Button className="h-12 w-full rounded-xl text-base font-bold shadow-md" disabled={paying || saveAddress.isPending} onClick={() => {
             if (!selected || showForm) { toast.info("Save your delivery address to continue"); document.getElementById("address-section")?.scrollIntoView({ behavior: "smooth" }); return; }
             if (deliveryType === "pickup" && !pickupStation) { toast.info("Choose a pickup station to continue"); document.getElementById("delivery-section")?.scrollIntoView({ behavior: "smooth" }); return; }
             setMobileStep("payment"); window.scrollTo({ top: 0, behavior: "instant" });
           }}>Continue to Payment<ChevronRight size={16} /></Button> : <>
             {blocker && <p className="mb-2 text-xs text-danger-ink">{blocker}</p>}
-            <Button onClick={pay} disabled={paying || !!blocker} className="h-12 w-full rounded-xl text-base font-bold shadow-md">{paying ? <><Loader2 size={18} className="animate-spin" />Processing…</> : <><Lock size={16} />{paymentMethod === "cod" ? "Confirm Order · Pay on Delivery" : `Pay ${formatGHC(grand)} with MoMo`}</>}</Button>
+            <Button onClick={pay} disabled={paying || !!blocker} className="h-12 w-full rounded-xl text-base font-bold shadow-md">{paying ? <><Loader2 size={18} className="animate-spin" />Processing…</> : <><Lock size={16} />{paymentMethod === "cod" ? (amountDue <= 0 ? "Confirm Order · Store Credit" : `Confirm Order · Pay ${formatGHC(amountDue)} on Delivery`) : `Pay ${formatGHC(amountDue)} with MoMo`}</>}</Button>
           </>}
         </div>
       </div>
