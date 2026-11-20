@@ -232,6 +232,13 @@
       "when": 1795196400000,
       "tag": "0032_custom_store_credit_amount",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795201500000,
+      "tag": "0033_kivora_food_seller_foundation",
+      "breakpoints": true
     }
   ]
 }

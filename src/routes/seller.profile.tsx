@@ -36,6 +36,13 @@ function SellerProfilePage() {
   const [pickupRegion, setPickupRegion] = useState("Greater Accra");
   const [pickupFee, setPickupFee] = useState("10");
   const [busy, setBusy] = useState(false);
+  const [foodSeller, setFoodSeller] = useState(false);
+  const [foodAccepting, setFoodAccepting] = useState(false);
+  const [foodOpensAt, setFoodOpensAt] = useState("08:00");
+  const [foodClosesAt, setFoodClosesAt] = useState("21:00");
+  const [foodDays, setFoodDays] = useState<string[]>(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]);
+  const [foodPrepMinutes, setFoodPrepMinutes] = useState("30");
+  const [foodScheduled, setFoodScheduled] = useState(true);
 
   useEffect(() => {
     if (profile) {
@@ -56,6 +63,22 @@ function SellerProfilePage() {
       setPickupFee(String((profile as any).pickup_fee ?? 10));
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    void (supabase as any).from("food_seller_settings").select("*").eq("seller_id", user.id).maybeSingle().then(({ data, error }: any) => {
+      if (!active || error || !data) return;
+      setFoodSeller(Boolean(data.is_food_seller));
+      setFoodAccepting(Boolean(data.accepting_orders));
+      setFoodOpensAt(String(data.opens_at ?? "08:00").slice(0, 5));
+      setFoodClosesAt(String(data.closes_at ?? "21:00").slice(0, 5));
+      setFoodDays(Array.isArray(data.days_open) ? data.days_open : []);
+      setFoodPrepMinutes(String(data.default_preparation_minutes ?? 30));
+      setFoodScheduled(Boolean(data.scheduled_orders_enabled));
+    });
+    return () => { active = false; };
+  }, [user?.id]);
 
   if (!user) return <p className="p-6 text-sm">Please log in.</p>;
   if (!profile) return <p className="p-6 text-sm">No shop yet — submit an application from the Dashboard.</p>;
@@ -111,6 +134,17 @@ function SellerProfilePage() {
       .eq("user_id", user.id);
     setBusy(false);
     if (error) return toast.error(error.message);
+    const { error: foodError } = await (supabase as any).from("food_seller_settings").upsert({
+      seller_id: user.id,
+      is_food_seller: foodSeller,
+      accepting_orders: foodSeller && foodAccepting,
+      opens_at: foodOpensAt,
+      closes_at: foodClosesAt,
+      days_open: foodDays,
+      default_preparation_minutes: Math.max(0, Math.min(1440, Number(foodPrepMinutes) || 0)),
+      scheduled_orders_enabled: foodScheduled,
+    }, { onConflict: "seller_id" });
+    if (foodError) return toast.error(`Shop saved, but food settings could not be saved: ${foodError.message}`);
     toast.success("Shop updated");
     refetch();
   };
@@ -214,6 +248,34 @@ function SellerProfilePage() {
         </div>
       </div>
       {uploading && <p className="text-xs text-muted-foreground">Uploading {uploading}…</p>}
+
+
+      <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+        <div>
+          <h3 className="font-bold text-foreground">Food &amp; Groceries</h3>
+          <p className="mt-1 text-xs text-muted-foreground">Enable this if your business sells prepared meals, groceries, baked goods, snacks or drinks. Food ordering is separate from your ordinary product listings.</p>
+        </div>
+        <label className="flex items-start gap-2 text-sm font-medium text-foreground">
+          <input type="checkbox" checked={foodSeller} onChange={(e) => { setFoodSeller(e.target.checked); if (!e.target.checked) setFoodAccepting(false); }} className="mt-1" />
+          <span>My shop sells food or groceries</span>
+        </label>
+        {foodSeller && <div className="space-y-3 rounded-lg bg-muted/40 p-3">
+          <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <input type="checkbox" checked={foodAccepting} onChange={(e) => setFoodAccepting(e.target.checked)} />
+            Accept food orders now
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">Opening time</label><input type="time" value={foodOpensAt} onChange={(e) => setFoodOpensAt(e.target.value)} className={inputCls} /></div>
+            <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">Closing time</label><input type="time" value={foodClosesAt} onChange={(e) => setFoodClosesAt(e.target.value)} className={inputCls} /></div>
+          </div>
+          <div><label className="mb-2 block text-xs font-semibold text-muted-foreground">Days open</label>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{["monday","tuesday","wednesday","thursday","friday","saturday","sunday"].map((day) => <label key={day} className="flex items-center gap-2 text-xs capitalize"><input type="checkbox" checked={foodDays.includes(day)} onChange={(e) => setFoodDays((current) => e.target.checked ? [...current, day] : current.filter((d) => d !== day))} />{day}</label>)}</div>
+          </div>
+          <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">Default preparation time (minutes)</label><input type="number" min="0" max="1440" step="5" value={foodPrepMinutes} onChange={(e) => setFoodPrepMinutes(e.target.value)} className={inputCls} /></div>
+          <label className="flex items-start gap-2 text-sm text-foreground"><input type="checkbox" checked={foodScheduled} onChange={(e) => setFoodScheduled(e.target.checked)} className="mt-1" /><span><span className="font-semibold">Allow scheduled food orders</span><span className="block text-xs text-muted-foreground">Let customers choose a later collection or delivery time. Scheduling controls will be added in a later phase.</span></span></label>
+          <p className="text-[11px] text-muted-foreground">Timezone: Ghana (Africa/Accra). Delivery charges continue to use your existing seller delivery settings; pickup uses your existing pickup settings.</p>
+        </div>}
+      </div>
 
       <div className="pt-2 border-t border-border space-y-3">
 
