@@ -1,10 +1,9 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { ShoppingCart, UserCircle2, Store, Shield, Search, HelpCircle, Package, Heart, LayoutGrid } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useShop } from "@/lib/store";
 import { useAuth, useIsAdmin } from "@/hooks/use-auth";
 import { useIsSeller } from "@/hooks/use-seller";
-import { useSearchUI } from "@/lib/search-ui";
 import { useCategories } from "@/lib/categories";
 import kivoraIcon from "@/assets/kivora-icon.png";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -14,8 +13,8 @@ import { HeaderChips } from "@/components/AppDrawer";
 
 export function TopNav() {
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const router = useRouter();
   const count = useShop((s) => s.cartCount());
-  const openSearch = useSearchUI((s) => s.setOpen);
   const [mounted, setMounted] = useState(false);
   const { user } = useAuth();
   const { data: isAdmin } = useIsAdmin(user);
@@ -40,7 +39,7 @@ export function TopNav() {
         </Link>
 
         <button
-          onClick={() => openSearch(true)}
+          onClick={() => router.navigate({ to: "/search", search: { q: "" } })}
           aria-label="Search"
           className="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-background ring-2 ring-primary py-1.5 pl-5 pr-1.5 text-left text-muted-foreground transition hover:bg-muted/70"
         >
