@@ -141,16 +141,16 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
   ].filter(Boolean) as { to: any; title: string; hint: string; icon: any; warn: boolean }[];
 
   return (
-    <div className="dashboard-canvas mx-auto max-w-7xl space-y-5 p-3 pb-10 sm:p-4 md:p-6 lg:p-8">
+    <div className="dashboard-canvas mx-auto max-w-7xl space-y-6 px-3 pb-10 pt-4 sm:px-5 md:space-y-7 md:pt-6 lg:px-8">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-primary/80 p-5 text-primary-foreground shadow-lg md:p-7">
+      <section className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-primary via-primary to-primary/80 p-5 text-primary-foreground shadow-xl shadow-primary/10 md:p-7">
         <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary-foreground/10" />
         <div className="pointer-events-none absolute -bottom-20 right-24 h-40 w-40 rounded-full bg-primary-foreground/10" />
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
-            <p className="text-xs font-semibold opacity-85">{greeting} 👋</p>
-            <h1 className="mt-1 truncate font-display text-2xl font-extrabold tracking-tight md:text-4xl">{shopName}</h1>
-            <p className="mt-1.5 text-sm opacity-90">Here's how your shop is doing today.</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary-foreground/75">{greeting} · SELLER OVERVIEW</p>
+            <h1 className="mt-2 truncate font-display text-2xl font-extrabold tracking-tight md:text-4xl">{shopName}</h1>
+            <p className="mt-2 max-w-lg text-sm leading-relaxed text-primary-foreground/80">A clear view of your sales, orders and shop activity.</p>
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <Button asChild size="sm" variant="secondary">
                 <Link to="/seller/products/new"><Plus /> Add product</Link>
@@ -168,7 +168,7 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
               <PushToggle />
             </div>
           </div>
-          <Link to="/seller/wallet" className="group shrink-0 rounded-2xl bg-primary-foreground/15 p-4 backdrop-blur transition hover:bg-primary-foreground/20 lg:min-w-64">
+          <Link to="/seller/wallet" className="group shrink-0 rounded-2xl border border-primary-foreground/15 bg-primary-foreground/15 p-4 shadow-inner backdrop-blur transition hover:bg-primary-foreground/20 lg:min-w-64">
             <p className="flex items-center gap-1.5 text-xs font-semibold opacity-85"><Wallet className="h-3.5 w-3.5" /> Available balance</p>
             <p className="mt-1 font-display text-3xl font-extrabold tracking-tight">{formatGHC(Number(wallet?.balance ?? 0))}</p>
             <p className="mt-1 flex items-center gap-1 text-xs font-bold">Withdraw to MoMo <ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" /></p>
@@ -181,8 +181,8 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
         {kpis.map((k) => {
           const Icon = k.icon;
           return (
-            <div key={k.label} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary"><Icon className="h-4.5 w-4.5" /></span>
+            <div key={k.label} className="group rounded-2xl border border-border bg-card p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground"><Icon className="h-5 w-5" /></span>
               <p className="mt-3 truncate font-display text-xl font-extrabold tracking-tight md:text-2xl">{k.value}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">{k.label}</p>
             </div>
@@ -191,14 +191,14 @@ function Overview({ userId, shopName, slug }: { userId: string; shopName: string
       </div>
 
       {/* Tools */}
-      <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
-        <h2 className="px-1 pb-3 text-sm font-bold">Seller tools</h2>
+      <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+        <div className="flex items-center justify-between px-1 pb-3"><h2 className="text-sm font-bold">Quick actions</h2><span className="text-[11px] font-medium text-muted-foreground">Manage your shop</span></div>
         <div className="grid grid-cols-4 gap-1 sm:gap-2 lg:grid-cols-9">
           {tools.map((t) => {
             const Icon = t.icon;
             return (
-              <Link key={t.to} to={t.to} className="flex flex-col items-center gap-1.5 rounded-xl p-2 text-center transition hover:bg-muted/50 active:scale-95">
-                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary sm:h-12 sm:w-12"><Icon className="h-5 w-5" /></span>
+              <Link key={t.to} to={t.to} className="group flex flex-col items-center gap-2 rounded-xl p-2.5 text-center transition hover:bg-muted/60 active:scale-95">
+                <span className="grid h-11 w-11 place-items-center rounded-2xl border border-primary/10 bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground sm:h-12 sm:w-12"><Icon className="h-5 w-5" /></span>
                 <span className="text-[11px] font-semibold leading-tight sm:text-xs">{t.label}</span>
               </Link>
             );
