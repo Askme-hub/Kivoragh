@@ -592,7 +592,7 @@ function Checkout() {
                 <div><p className="text-xl font-extrabold">Approve on your phone</p><p className="mt-1 text-sm text-muted-foreground">{momoMsg || "A payment request will appear on your phone. Check the amount before approving."}</p></div>
                 <div className="rounded-2xl border border-border bg-muted/50 p-4">
                   <p className="text-xs font-medium text-muted-foreground">Amount to approve</p>
-                  <p className="mt-1 text-3xl font-black tracking-tight">{formatGHC(grand)}</p>
+                  <p className="mt-1 text-3xl font-black tracking-tight">{formatGHC(amountDue)}</p>
                   <div className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold"><NetworkLogo network={momoNet} /><span>{momoNet === "MTN" ? "MTN MoMo" : momoNet === "TELECEL" ? "Telecel Cash" : "AT Money"}</span><span className="text-muted-foreground">·</span><span>{momoPhone}</span></div>
                 </div>
                 <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/5 px-3 py-3 text-xs font-semibold text-primary"><Loader2 size={15} className="animate-spin" /> Waiting for your approval</div>
