@@ -35,7 +35,7 @@ function ReferralsPage() {
       setLoading(true);
       const [{ data: codeRows, error: codeError }, { data: settings }, { data: rows, error: eventError }] = await Promise.all([
         (supabase as any).rpc("get_or_create_my_referral_code"),
-        (supabase as any).from("referral_settings").select("enabled").eq("id", true).maybeSingle(),
+        (supabase as any).rpc("referral_program_is_enabled"),
         (supabase as any).from("referral_events").select("id,referred_user_type,event_type,status,qualification_amount,created_at,qualified_at").eq("referrer_user_id", user.id).order("created_at", { ascending: false }),
       ]);
       if (!active) return;
@@ -47,7 +47,7 @@ function ReferralsPage() {
       }
       if (eventError) toast.error("Could not load referral activity");
       else setEvents((rows ?? []) as ReferralEvent[]);
-      setEnabled(Boolean(settings?.enabled));
+      setEnabled(Boolean(settings));
       setLoading(false);
     })();
     return () => { active = false; };
