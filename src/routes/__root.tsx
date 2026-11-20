@@ -14,7 +14,6 @@ import { MobileTopBar } from "@/components/AppDrawer";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
-import { SearchOverlay } from "@/components/SearchOverlay";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useLiveStock } from "@/lib/products";
 import { Toaster } from "@/components/ui/sonner";
@@ -164,7 +163,6 @@ function RootComponent() {
       <div className="min-h-screen flex flex-col bg-background">
         {!workspace && <MobileTopBar />}
         {!workspace && <TopNav />}
-        <SearchOverlay />
         <main className={workspace ? "flex-1 w-full max-w-[1440px] mx-auto md:p-3" : "flex-1 w-full max-w-md md:max-w-7xl mx-auto md:px-4 pb-24 md:pb-0"}>
           <Outlet />
         </main>
