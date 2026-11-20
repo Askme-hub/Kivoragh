@@ -27,7 +27,7 @@ BEGIN
   END IF;
 
   LOOP
-    v_code := upper(substr(encode(gen_random_bytes(8), 'hex'), 1, 10));
+    v_code := upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10));
     BEGIN
       INSERT INTO public.referral_codes(user_id, user_type, code)
       VALUES (v_user, v_type, v_code);
@@ -76,7 +76,9 @@ BEGIN
     (referral_code_id, referrer_user_id, referred_user_id, referred_user_type,
      event_type, status, source)
   VALUES
-    (v_ref.id, v_ref.user_id, v_user, v_ref.user_type, 'registration', 'pending',
+    (v_ref.id, v_ref.user_id, v_user,
+     CASE WHEN public.has_role(v_user, 'seller') THEN 'seller' ELSE 'customer' END,
+     'registration', 'pending',
      left(coalesce(nullif(_source, ''), 'signup'), 40))
   ON CONFLICT (referred_user_id) DO NOTHING;
 
