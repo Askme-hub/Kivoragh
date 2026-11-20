@@ -15,7 +15,7 @@ export function getRecentSearches(): string[] {
 }
 
 export function rememberSearch(term: string): string[] {
-  const value = term.trim().replace(/\\s+/g, " ");
+  const value = term.trim().replace(/\s+/g, " ");
   if (!value || typeof window === "undefined") return getRecentSearches();
   const next = [value, ...getRecentSearches().filter((item) => item.toLowerCase() !== value.toLowerCase())]
     .slice(0, MAX_RECENT_SEARCHES);
