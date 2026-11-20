@@ -225,6 +225,13 @@
       "when": 1795192800000,
       "tag": "0031_referral_program_status_rpc",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795196400000,
+      "tag": "0032_custom_store_credit_amount",
+      "breakpoints": true
     }
   ]
 }
