@@ -37,6 +37,7 @@ export const placeCODOrder = createServerFn({ method: "POST" })
         delivery: DeliverySchema,
         coupon_code: z.string().trim().max(50).optional(),
         use_store_credit: z.boolean().optional().default(false),
+        store_credit_amount: z.number().min(0).max(1000000000).optional(),
       })
       .parse(input)
   )
@@ -174,7 +175,7 @@ if (total <= 0) throw new Error("Invalid cart total");
     let amountDue = Number(order.total);
     if (data.use_store_credit) {
       const { data: creditRows, error: creditError } = await (context.supabase as any)
-        .rpc("apply_store_credit_to_order", { _order_id: order.id });
+        .rpc("apply_store_credit_to_order", { _order_id: order.id, _requested_amount: data.store_credit_amount ?? null });
       if (creditError) {
         await supabaseAdmin.from("orders").delete().eq("id", order.id);
         throw new Error(creditError.message || "Could not apply Kivora Store Credit");
