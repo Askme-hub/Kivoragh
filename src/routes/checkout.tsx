@@ -549,7 +549,7 @@ function Checkout() {
                 <div className="rounded-2xl border border-border bg-muted/50 p-4">
                   <p className="text-xs font-medium text-muted-foreground">Amount to approve</p>
                   <p className="mt-1 text-3xl font-black tracking-tight">{formatGHC(grand)}</p>
-                  <div className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold"><span className="rounded-lg bg-background px-2.5 py-1">{momoNet === "MTN" ? "MTN MoMo" : momoNet === "TELECEL" ? "Telecel Cash" : "AT Money"}</span><span className="text-muted-foreground">·</span><span>{momoPhone}</span></div>
+                  <div className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold"><NetworkLogo network={momoNet} /><span>{momoNet === "MTN" ? "MTN MoMo" : momoNet === "TELECEL" ? "Telecel Cash" : "AT Money"}</span><span className="text-muted-foreground">·</span><span>{momoPhone}</span></div>
                 </div>
                 <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/5 px-3 py-3 text-xs font-semibold text-primary"><Loader2 size={15} className="animate-spin" /> Waiting for your approval</div>
                 <p className="text-xs leading-5 text-muted-foreground">Enter your MoMo PIN on your phone to approve. Keep this page open while Kivora confirms your payment. Never share your PIN with anyone.</p>
