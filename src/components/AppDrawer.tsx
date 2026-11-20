@@ -28,7 +28,6 @@ import { useCategories } from "@/lib/categories";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useSearchUI } from "@/lib/search-ui";
 import kivoraIcon from "@/assets/kivora-icon.png";
 import { UserAvatar } from "@/components/UserAvatar";
 import { InstallAppButton } from "@/components/InstallAppButton";
@@ -260,24 +259,24 @@ export function AppDrawer() {
 /** Minimal mobile shopping header: search first, categories directly below. */
 export function MobileTopBar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const openSearch = useSearchUI((s) => s.setOpen);
+  const router = useRouter();
 
-  if (path === "/login") return null;
+  if (path === "/login" || path === "/search") return null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 shadow-sm backdrop-blur md:hidden">
       <div className="px-3 pt-2.5 pb-2">
         <button
           type="button"
-          onClick={() => openSearch(true)}
+          onClick={() => router.navigate({ to: "/search", search: { q: "" } })}
           aria-label="Search products on Kivora"
-          className="flex h-11 w-full items-center gap-3 rounded-xl border border-border bg-card px-3.5 text-left shadow-sm transition hover:border-primary/50 active:scale-[0.99]"
+          className="flex h-14 w-full items-center gap-3 rounded-2xl border-2 border-primary/25 bg-card px-4 text-left shadow-[0_5px_18px_-12px_hsl(var(--primary)/0.45)] transition hover:border-primary/50 active:scale-[0.99]"
         >
-          <Search size={19} className="shrink-0 text-primary" />
-          <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          <Search size={22} strokeWidth={2.3} className="shrink-0 text-primary" />
+          <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-muted-foreground">
             Search products, brands and categories
           </span>
-          <span className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">
+          <span className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">
             Search
           </span>
         </button>
