@@ -190,6 +190,13 @@
       "when": 1794870771781,
       "tag": "0026_admin_users_site_content",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1795184000000,
+      "tag": "0027_marketing_referrals_foundation",
+      "breakpoints": true
     }
   ]
 }
