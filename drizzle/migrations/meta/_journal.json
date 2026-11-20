@@ -218,6 +218,13 @@
       "when": 1795192200000,
       "tag": "0030_kivora_referral_signup_capture",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795192800000,
+      "tag": "0031_referral_program_status_rpc",
+      "breakpoints": true
     }
   ]
 }
