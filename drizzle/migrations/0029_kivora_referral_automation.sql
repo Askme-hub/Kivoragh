@@ -100,14 +100,18 @@ DECLARE
   v_event public.referral_events%ROWTYPE;
   v_enabled boolean;
   v_reward numeric(12,2);
+  v_referrer_type text;
   v_tx_id uuid;
 BEGIN
   SELECT * INTO v_event FROM public.referral_events
     WHERE id = _event_id AND status = 'pending' FOR UPDATE;
   IF NOT FOUND THEN RETURN; END IF;
 
+  SELECT user_type INTO v_referrer_type
+    FROM public.referral_codes WHERE id = v_event.referral_code_id;
+
   SELECT enabled,
-    CASE WHEN v_event.referred_user_type = 'seller'
+    CASE WHEN v_referrer_type = 'seller'
       THEN seller_referrer_reward ELSE customer_referrer_reward END
   INTO v_enabled, v_reward
   FROM public.referral_settings WHERE id = true;
@@ -233,3 +237,35 @@ DROP TRIGGER IF EXISTS trg_qualify_seller_referral_on_delivery ON public.order_i
 CREATE TRIGGER trg_qualify_seller_referral_on_delivery
 AFTER UPDATE OF fulfillment_status ON public.order_items
 FOR EACH ROW EXECUTE FUNCTION public.qualify_seller_referral_on_delivery();
+
+
+-- Keep referral classifications in sync with approved marketplace roles.
+-- The code owner's role determines which referrer reward applies; the referred
+-- account's role determines whether customer-order or seller-sale qualification runs.
+CREATE OR REPLACE FUNCTION public.sync_referral_role_classification()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_is_seller boolean;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = NEW.user_id AND role = 'seller'
+  ) INTO v_is_seller;
+
+  UPDATE public.referral_codes
+    SET user_type = CASE WHEN v_is_seller THEN 'seller' ELSE 'customer' END,
+        updated_at = now()
+    WHERE user_id = NEW.user_id;
+
+  UPDATE public.referral_events
+    SET referred_user_type = CASE WHEN v_is_seller THEN 'seller' ELSE 'customer' END
+    WHERE referred_user_id = NEW.user_id AND status = 'pending';
+
+  RETURN NEW;
+END $$;
+
+REVOKE ALL ON FUNCTION public.sync_referral_role_classification()
+  FROM PUBLIC, anon, authenticated;
+DROP TRIGGER IF EXISTS trg_sync_referral_role_classification ON public.user_roles;
+CREATE TRIGGER trg_sync_referral_role_classification
+AFTER INSERT OR UPDATE OF role ON public.user_roles
+FOR EACH ROW EXECUTE FUNCTION public.sync_referral_role_classification();
