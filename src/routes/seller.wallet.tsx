@@ -25,7 +25,7 @@ const MOMO_NETWORKS = ["MTN Mobile Money", "Telecel Cash", "AT Money"];
 function validMomo(n: string) {
   const d = n.replace(/\D/g, "");
   const local = d.startsWith("233") ? "0" + d.slice(3) : d;
-  return /^0(2[0346789]|5[03456789])\d{7}$/.test(local);
+  return /^0(?:20|23|24|25|26|27|28|29|50|53|54|55|56|57|59)\d{7}$/.test(local);
 }
 
 function SellerWallet() {
@@ -276,7 +276,17 @@ function SellerWallet() {
                 </label>
                 <label className="space-y-1.5 text-xs font-semibold text-muted-foreground">
                   {method === "Mobile Money" ? "MoMo number" : "Bank account number"}
-                  <input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-medium text-foreground outline-none focus:border-primary" placeholder={method === "Mobile Money" ? "024XXXXXXX" : "Account number"} />
+                  <input
+                    type={method === "Mobile Money" ? "tel" : "text"}
+                    inputMode={method === "Mobile Money" ? "tel" : "text"}
+                    autoComplete={method === "Mobile Money" ? "tel-national" : "off"}
+                    maxLength={method === "Mobile Money" ? 14 : 40}
+                    value={accountNumber}
+                    onChange={(e) => setAccountNumber(e.target.value.replace(/[^0-9+ ]/g, ""))}
+                    className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-medium text-foreground outline-none focus:border-primary"
+                    placeholder={method === "Mobile Money" ? "025XXXXXXX or +23325XXXXXXX" : "Account number"}
+                  />
+                  {method === "Mobile Money" && <p className="text-[11px] leading-relaxed text-muted-foreground">Enter your 10-digit Ghana number starting with 0, or use the +233 country code. Example: 025XXXXXXX.</p>}
                 </label>
                 <label className="space-y-1.5 text-xs font-semibold text-muted-foreground">
                   {method === "Mobile Money" ? "Mobile network" : "Bank name"}
