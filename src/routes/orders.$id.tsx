@@ -113,6 +113,8 @@ function CancelBlock({ order }: { order: any }) {
           Refund of {formatGHC(externalRefund)} completed{order.refunded_at ? ` on ${new Date(order.refunded_at).toLocaleDateString()}` : ""}. {storeCreditApplied > 0 ? `${formatGHC(storeCreditApplied)} Store Credit was returned to your Kivora balance.` : ""}
         </div>
       );
+    if (storeCreditApplied > 0)
+      return <div className="mx-4 mt-3 p-3 rounded-lg bg-success-soft text-success-ink text-sm">{formatGHC(storeCreditApplied)} Store Credit has been returned to your Kivora balance.</div>;
     return null;
   }
   const shippedItem = (order.order_items ?? []).some((i: any) => i.fulfillment_status === "shipped" || i.fulfillment_status === "delivered");
