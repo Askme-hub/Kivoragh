@@ -71,6 +71,20 @@ const MOMO_NETS: { id: MomoNet; label: string }[] = [
   { id: "TELECEL", label: "Telecel Cash" },
   { id: "AT", label: "AT Money" },
 ];
+
+function NetworkLogo({ network }: { network: MomoNet }) {
+  if (network === "MTN") return (
+    <span className="flex h-9 w-12 items-center justify-center rounded-full border-2 border-black bg-[#ffcc00] text-[13px] font-black italic tracking-tight text-black">MTN</span>
+  );
+  if (network === "TELECEL") return (
+    <span className="flex h-9 w-12 items-center justify-center rounded-lg bg-[#e21d36] text-[11px] font-black tracking-tight text-white">telecel</span>
+  );
+  return (
+    <span className="flex h-9 w-12 items-center justify-center rounded-lg bg-white text-[19px] font-black italic tracking-tighter">
+      <span className="text-[#ed1c24]">A</span><span className="text-[#1769aa]">T</span>
+    </span>
+  );
+}
 function guessNet(phone: string): MomoNet {
   const d = phone.replace(/\D/g, "").replace(/^233/, "0");
   const p = d.slice(0, 3);
@@ -562,15 +576,13 @@ function Checkout() {
           <div className={cn("h-0.5 flex-1 rounded-full", mobileStep === "payment" ? "bg-success" : "bg-border")} />
           <StepBadge n={2} label="Payment" active={mobileStep === "payment"} />
           <div className="h-0.5 flex-1 rounded-full bg-border" />
-          <StepBadge n={3} label="Confirm" />
         </div>
       </div>
 
-      <div className="border-b border-border bg-primary-soft/60">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 overflow-x-auto px-4 py-2 text-[11px] font-semibold text-foreground md:px-6">
-          <span className="flex shrink-0 items-center gap-1.5"><ShieldCheck size={14} className="text-success" />48h buyer protection</span>
-          <span className="flex shrink-0 items-center gap-1.5"><Banknote size={14} className="text-primary" />Pay when it arrives</span>
-          <span className="flex shrink-0 items-center gap-1.5"><Truck size={14} className="text-primary" />Delivery across Ghana</span>
+      <div className="border-b border-border bg-card">
+        <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-2 text-xs text-muted-foreground md:px-6">
+          <ShieldCheck size={14} className="text-success" />
+          <span>Secure checkout · Delivery across Ghana</span>
         </div>
       </div>
 
@@ -579,10 +591,10 @@ function Checkout() {
           {/* ============ LEFT COLUMN – Form ============ */}
           <div className="min-w-0 space-y-4">
             {/* Delivery methods remain available before an address is saved. */}
-            <section id="delivery-section" className={cn("overflow-hidden rounded-2xl border border-border bg-card shadow-sm", mobileStep !== "delivery" && "hidden md:block")}>
+            <section id="delivery-section" className={cn("overflow-hidden rounded-2xl border border-border bg-card shadow-sm", mobileStep !== "delivery" && "hidden")}>
               <div className="flex items-center gap-3 border-b border-border px-4 py-3.5 md:px-5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10"><Truck size={18} className="text-primary" /></div>
-                <div><h2 className="text-sm font-semibold">Delivery Method</h2><p className="text-xs text-muted-foreground">How do you want to receive your order?</p></div>
+                <div><h2 className="text-sm font-semibold">How would you like to receive it?</h2><p className="text-xs text-muted-foreground">Choose delivery or pickup</p></div>
               </div>
               <div className="grid grid-cols-2 gap-2.5 px-4 pt-4 md:px-5">
                 {([
@@ -615,7 +627,7 @@ function Checkout() {
             {/* ---- Delivery Address ---- */}
             <section
               id="address-section"
-              className={cn("overflow-hidden rounded-2xl border border-border bg-card shadow-sm", mobileStep !== "delivery" && "hidden md:block")}
+              className={cn("overflow-hidden rounded-2xl border border-border bg-card shadow-sm", mobileStep !== "delivery" && "hidden")}
             >
               <div className="flex items-center gap-3 border-b border-border px-4 py-3.5 md:px-5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
@@ -765,14 +777,19 @@ function Checkout() {
                       textarea
                     />
 
-                    <Field
-                      label="Delivery notes (optional)"
-                      value={form.notes}
-                      onChange={(v) => set("notes", v)}
-                      error={errors.notes}
-                      placeholder="Gate code, preferred time…"
-                      textarea
-                    />
+                    <details className="rounded-xl border border-border px-3.5 py-3">
+                      <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">Add delivery instructions (optional)</summary>
+                      <div className="pt-3">
+                        <Field
+                          label="Delivery notes"
+                          value={form.notes}
+                          onChange={(v) => set("notes", v)}
+                          error={errors.notes}
+                          placeholder="Landmark, gate code or directions…"
+                          textarea
+                        />
+                      </div>
+                    </details>
 
                     <label className="flex cursor-pointer items-center gap-2.5 text-sm">
                       <input
@@ -804,14 +821,15 @@ function Checkout() {
             </section>
 
             {/* ---- Payment Method ---- */}
-            <section className={cn("overflow-hidden rounded-2xl border border-border bg-card shadow-sm", mobileStep !== "payment" && "hidden md:block")}>
+            {mobileStep === "payment" && <button type="button" onClick={() => { setMobileStep("delivery"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="mb-1 text-xs font-semibold text-primary">← Back to delivery details</button>}
+            <section className={cn("overflow-hidden rounded-2xl border border-border bg-card shadow-sm", mobileStep !== "payment" && "hidden")}>
               <div className="flex items-center gap-3 border-b border-border px-4 py-3.5 md:px-5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
                   <CreditCard size={18} className="text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-semibold tracking-normal">Payment Method</h2>
-                  <p className="text-xs text-muted-foreground">Choose how you want to pay</p>
+                  <h2 className="text-sm font-semibold tracking-normal">Choose how to pay</h2>
+                  <p className="text-xs text-muted-foreground">Select a payment option</p>
                 </div>
               </div>
 
@@ -832,7 +850,11 @@ function Checkout() {
                     <div className="space-y-3 border-t border-border px-4 pb-4 pt-3">
                       <div className="grid grid-cols-3 gap-2">
                         {MOMO_NETS.map((n) => (
-                          <button key={n.id} type="button" onClick={() => setMomoNet(n.id)} className={cn("rounded-lg border px-2 py-2 text-xs font-semibold", momoNet === n.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background")}>{n.label}</button>
+                          <button key={n.id} type="button" aria-pressed={momoNet === n.id} onClick={() => setMomoNet(n.id)} className={cn("flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-2 text-[11px] font-semibold transition", momoNet === n.id ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-background hover:border-primary/40")}>
+                            <NetworkLogo network={n.id} />
+                            <span className="text-foreground">{n.label}</span>
+                            {momoNet === n.id && <span className="text-[9px] font-bold uppercase tracking-wide text-primary">Selected</span>}
+                          </button>
                         ))}
                       </div>
                       <div>
@@ -920,7 +942,7 @@ function Checkout() {
             </section>
 
             {/* ---- Coupon ---- */}
-            <section className={cn("overflow-hidden rounded-2xl border border-border bg-card shadow-sm", mobileStep !== "payment" && "hidden md:block")}>
+            <section className={cn("overflow-hidden rounded-2xl border border-border bg-card shadow-sm", mobileStep !== "payment" && "hidden")}>
               <div className="flex items-center gap-3 border-b border-border px-4 py-3.5 md:px-5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
                   <TicketPercent size={18} className="text-primary" />
@@ -988,34 +1010,29 @@ function Checkout() {
                 <OrderSummaryContent />
               </div>
 
-              {blocker && (
+              {mobileStep === "payment" && (
+                <button type="button" onClick={() => { setMobileStep("delivery"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="w-full py-1 text-xs font-semibold text-primary hover:underline">
+                  ← Edit delivery details
+                </button>
+              )}
+              {mobileStep === "payment" && blocker && (
                 <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-xs font-medium text-warning">
                   {blocker}
                 </div>
               )}
 
-              <Button variant="ghost"
-                type="button"
-                onClick={pay}
-                disabled={paying || !!blocker}
-                className={cn(
-                  "flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-primary-foreground shadow-sm transition",
-                  blocker
-                    ? "cursor-not-allowed bg-primary/50"
-                    : "bg-primary hover:bg-primary/90 active:scale-[0.98]",
-                )}
-              >
-                {paying ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" /> Processing…
-                  </>
-                ) : (
-                  <>
-                    <Lock size={16} />
-                    {paymentMethod === "cod" ? "Place Order · Pay on Delivery" : `Pay ${formatGHC(grand)} with MoMo`}
-                  </>
-                )}
-              </Button>
+              {mobileStep === "delivery" ? (
+                <Button type="button" className="h-12 w-full rounded-xl text-sm font-bold" disabled={paying || saveAddress.isPending} onClick={() => {
+                  if (!selected || showForm) { toast.info("Save your delivery address to continue"); document.getElementById("address-section")?.scrollIntoView({ behavior: "smooth" }); return; }
+                  if (deliveryType === "pickup" && !pickupStation) { toast.info("Choose a pickup station to continue"); document.getElementById("delivery-section")?.scrollIntoView({ behavior: "smooth" }); return; }
+                  setMobileStep("payment");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}>Continue to Payment <ChevronRight size={16} /></Button>
+              ) : (
+                <Button type="button" onClick={pay} disabled={paying || !!blocker} className="h-12 w-full rounded-xl text-sm font-bold">
+                  {paying ? <><Loader2 size={18} className="animate-spin" /> Processing…</> : <><Lock size={16} /> {paymentMethod === "cod" ? "Place Order · Pay on Delivery" : `Pay ${formatGHC(grand)} with MoMo`}</>}
+                </Button>
+              )}
 
               <p className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
                 <ShieldCheck size={12} className="text-success" />
