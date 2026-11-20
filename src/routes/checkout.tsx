@@ -378,6 +378,10 @@ function Checkout() {
       setMomoOrder(res.order_id);
       setMomoOtp("");
       setMomoMsg(res.message ?? "");
+      if (res.next === "error") {
+        router.navigate({ to: "/payment/callback", search: { provider: "moolre", order: res.order_id } });
+        return;
+      }
       setMomoStage(res.next === "otp" ? "otp" : "prompt");
       setPaying(false);
     } catch (e: any) {
@@ -398,15 +402,16 @@ function Checkout() {
       if (stop) return;
       try {
         const r = await checkMomo({ data: { order_id: momoOrder } });
-        if (r.status === "paid") {
-          clearCart();
-          toast.success("Payment received! Your order is confirmed.");
-          router.navigate({ to: "/orders/$id", params: { id: momoOrder } });
+        if (r.status === "paid" || r.status === "failed") {
+          if (r.status === "paid") clearCart();
+          router.navigate({ to: "/payment/callback", search: { provider: "moolre", order: momoOrder } });
           return;
         }
-        if (r.status === "failed") { setMomoStage("failed"); setMomoMsg(r.reason ?? "Payment was not completed."); return; }
-      } catch { /* keep waiting */ }
-      if (Date.now() - started > 180000) { setMomoStage("failed"); setMomoMsg("We didn't get your approval in time. You can try again."); return; }
+      } catch { /* keep waiting; the result page will perform its own verification too */ }
+      if (Date.now() - started > 180000) {
+        router.navigate({ to: "/payment/callback", search: { provider: "moolre", order: momoOrder } });
+        return;
+      }
       setTimeout(tick, 4000);
     };
     const t = setTimeout(tick, 5000);
@@ -523,12 +528,17 @@ function Checkout() {
               </div>
             )}
             {momoStage === "prompt" && (
-              <div className="space-y-4 text-center">
-                <div className="relative mx-auto flex h-20 w-20 items-center justify-center"><span className="absolute inset-0 animate-ping rounded-full bg-primary/25" /><div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground"><Smartphone size={30} /></div></div>
-                <p className="text-lg font-bold">Check your phone</p>
-                <p className="text-sm text-muted-foreground">A payment prompt for <span className="font-semibold text-foreground">{formatGHC(grand)}</span> was sent to <span className="font-semibold text-foreground">{momoPhone}</span>. Enter your MoMo PIN to approve.</p>
-                <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground"><Loader2 size={14} className="animate-spin" /> Waiting for approval…</p>
-                <p className="text-[11px] text-muted-foreground">No prompt? Dial your network's MoMo menu and check "My approvals".</p>
+              <div className="space-y-5 text-center">
+                <div className="mx-auto flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-primary"><ShieldCheck size={15} /> Kivora secure payment</div>
+                <div className="relative mx-auto flex h-24 w-24 items-center justify-center"><span className="absolute inset-0 animate-ping rounded-full bg-primary/15" /><div className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-primary text-primary-foreground shadow-lg"><Smartphone size={34} /></div></div>
+                <div><p className="text-xl font-extrabold">Approve on your phone</p><p className="mt-1 text-sm text-muted-foreground">Your payment request is on its way.</p></div>
+                <div className="rounded-2xl border border-border bg-muted/50 p-4">
+                  <p className="text-xs font-medium text-muted-foreground">Amount to approve</p>
+                  <p className="mt-1 text-3xl font-black tracking-tight">{formatGHC(grand)}</p>
+                  <div className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold"><span className="rounded-lg bg-background px-2.5 py-1">{momoNet === "MTN" ? "MTN MoMo" : momoNet === "TELECEL" ? "Telecel Cash" : "AT Money"}</span><span className="text-muted-foreground">·</span><span>{momoPhone}</span></div>
+                </div>
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/5 px-3 py-3 text-xs font-semibold text-primary"><Loader2 size={15} className="animate-spin" /> Waiting for your approval</div>
+                <p className="text-xs leading-5 text-muted-foreground">Enter your MoMo PIN on your phone to approve. Keep this page open while Kivora confirms your payment. Never share your PIN with anyone.</p>
               </div>
             )}
             {momoStage === "failed" && (
@@ -815,7 +825,7 @@ function Checkout() {
                         <p className="text-sm font-semibold">Mobile Money</p>
                         {paymentMethod === "online" && <span className="inline-flex items-center gap-1 rounded-md bg-success/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success"><Check size={10} /> Selected</span>}
                       </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground">MTN MoMo · Telecel Cash · AT Money — approve with your PIN</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">Pay securely from your phone. No card details needed.</p>
                     </div>
                   </button>
                   {paymentMethod === "online" && (
@@ -828,7 +838,7 @@ function Checkout() {
                       <div>
                         <Label htmlFor="momo-phone" className="text-xs">Mobile Money number</Label>
                         <Input id="momo-phone" inputMode="tel" placeholder="024 000 0000" value={momoPhone} maxLength={16} onChange={(e) => { setMomoPhone(e.target.value); if (e.target.value.replace(/\D/g, "").length >= 3) setMomoNet(guessNet(e.target.value)); }} className="mt-1 h-11" />
-                        <p className="mt-1 text-[11px] text-muted-foreground">A payment prompt will pop up on this phone. Enter your PIN to approve.</p>
+                        <div className="mt-2 flex items-start gap-2 rounded-lg bg-muted/60 px-3 py-2.5 text-[11px] leading-relaxed text-muted-foreground"><ShieldCheck size={14} className="mt-0.5 shrink-0 text-success" /><span>We'll send a secure payment request to this number. Approve it with your MoMo PIN. Your PIN is never shared with Kivora.</span></div>
                       </div>
                     </div>
                   )}
