@@ -261,6 +261,7 @@ export function AppDrawer() {
 export function MobileTopBar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const router = useRouter();
+  const { user } = useAuth();
 
   if (path === "/login" || path === "/search") return null;
 
@@ -281,9 +282,11 @@ export function MobileTopBar() {
             Search
           </span>
         </button>
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5">
-          <MessageBell variant="mobile" />
-        </div>
+        {user && (
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5">
+            <MessageBell variant="mobile" />
+          </div>
+        )}
       </div>
       <HeaderChips />
     </header>
