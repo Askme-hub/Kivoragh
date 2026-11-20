@@ -178,6 +178,7 @@ function Checkout() {
   const [saveAsDefault, setSaveAsDefault] = useState(true);
   const [paying, setPaying] = useState(false);
   const [storeCreditBalance, setStoreCreditBalance] = useState(0);
+  const [storeCreditAmount, setStoreCreditAmount] = useState(0);
   const [useStoreCredit, setUseStoreCredit] = useState(false);
 
   // Pick default address once loaded
@@ -246,7 +247,8 @@ function Checkout() {
     };
   }, [deliveryType, itemsTotal, sellerDelivery, appliedCoupon, selectedRegion, zones]);
 
-  const appliedStoreCredit = useStoreCredit ? Math.min(storeCreditBalance, grand) : 0;
+  const maxStoreCredit = Math.min(storeCreditBalance, grand);
+  const appliedStoreCredit = useStoreCredit ? Math.min(maxStoreCredit, Math.max(0, Number(storeCreditAmount) || 0)) : 0;
   const amountDue = Math.max(0, grand - appliedStoreCredit);
 
   useEffect(() => {
@@ -261,6 +263,7 @@ function Checkout() {
       if (active && !error) {
         const balance = Number(wallet?.promotional_balance ?? 0);
         setStoreCreditBalance(balance);
+        setStoreCreditAmount(balance);
         setUseStoreCredit(balance > 0);
       }
     });
@@ -405,6 +408,7 @@ function Checkout() {
             items: itemsPayload,
             coupon_code: appliedCoupon?.code,
             use_store_credit: useStoreCredit,
+            store_credit_amount: appliedStoreCredit,
           },
         });
         clearCart();
@@ -413,7 +417,7 @@ function Checkout() {
         return;
       }
       const res = await startMomo({
-        data: { delivery: deliveryPayload, items: itemsPayload, coupon_code: appliedCoupon?.code, use_store_credit: useStoreCredit, channel: momoNet, payer: momoPhone },
+        data: { delivery: deliveryPayload, items: itemsPayload, coupon_code: appliedCoupon?.code, use_store_credit: useStoreCredit, store_credit_amount: appliedStoreCredit, channel: momoNet, payer: momoPhone },
       });
       if (res.next === "paid") {
         clearCart();
@@ -547,6 +551,23 @@ function Checkout() {
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2 text-sm font-semibold"><Wallet size={16} className="text-primary" /> Use Kivora Store Credit</span>
                 <span className="mt-1 block text-xs text-muted-foreground">Available balance: {formatGHC(storeCreditBalance)} · Cannot be withdrawn or transferred.</span>
+            {useStoreCredit && (
+              <span className="mt-3 block space-y-1.5">
+                <span className="block text-xs font-semibold text-foreground">Amount to use (GH₵)</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  max={maxStoreCredit}
+                  step="0.01"
+                  value={Math.min(Number(storeCreditAmount) || 0, maxStoreCredit)}
+                  onChange={(e) => setStoreCreditAmount(Math.max(0, Number(e.target.value) || 0))}
+                  className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm font-semibold outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  aria-label="Store Credit amount to use in Ghana cedis"
+                />
+                <span className="block text-[11px] text-muted-foreground">You can use any amount up to {formatGHC(maxStoreCredit)}.</span>
+              </span>
+            )}
               </span>
             </label>
             {appliedStoreCredit > 0 && <div className="mt-2 flex justify-between border-t border-primary/10 pt-2 text-sm"><span className="text-muted-foreground">Credit applied</span><span className="font-semibold text-success">−{formatGHC(appliedStoreCredit)}</span></div>}
