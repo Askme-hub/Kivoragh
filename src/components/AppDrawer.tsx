@@ -1,6 +1,3 @@
-import { useSiteContent, telHref, waNumber } from "@/lib/site-content";
-import { InboxBell } from "@/components/InboxBell";
-import { MessageBell } from "@/components/MessageBell";
 import { Link, useRouterState, useRouter } from "@tanstack/react-router";
 import {
   Home,
@@ -21,13 +18,10 @@ import {
   Tag,
   MessageCircle,
 
-  Phone,
-  Truck,
   Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useShop } from "@/lib/store";
 import { useAuth, useIsAdmin } from "@/hooks/use-auth";
 import { useIsSeller } from "@/hooks/use-seller";
 import { useCategories } from "@/lib/categories";
