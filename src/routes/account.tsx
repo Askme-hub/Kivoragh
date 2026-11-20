@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useAuth, useIsAdmin } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useProfile } from "@/lib/profile";
 import { useIsSeller } from "@/hooks/use-seller";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +23,14 @@ function Account() {
   const { data: isAdmin } = useIsAdmin(user);
   const { data: isSeller } = useIsSeller(user);
   const { data: profile } = useProfile(user?.id);
+  const [storeCredit, setStoreCredit] = useState(0);
+  useEffect(() => {
+    if (!user?.id) { setStoreCredit(0); return; }
+    let active = true;
+    (supabase as any).from("marketing_wallets").select("promotional_balance").eq("user_id", user.id).maybeSingle()
+      .then(({ data, error }: any) => { if (active && !error) setStoreCredit(Number(data?.promotional_balance ?? 0)); });
+    return () => { active = false; };
+  }, [user?.id]);
   const [storeCredit, setStoreCredit] = useState(0);
   useEffect(() => {
     if (!user?.id) { setStoreCredit(0); return; }
