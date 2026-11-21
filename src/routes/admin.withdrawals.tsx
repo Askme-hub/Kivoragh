@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowDownToLine } from "lucide-react";
 import { formatGHC } from "@/lib/store";
-import { getAllWithdrawals, decideWithdrawal } from "@/lib/wallet.functions";
+import { getAllWithdrawals, decideWithdrawal, refreshMoolreWithdrawal, cancelUnsubmittedMoolreWithdrawal } from "@/lib/wallet.functions";
 
 export const Route = createFileRoute("/admin/withdrawals")({
   component: AdminWithdrawals,
@@ -17,7 +17,7 @@ const FILTERS = ["all", "pending", "approved", "paid", "rejected"] as const;
 function AdminWithdrawals() {
   const qc = useQueryClient();
   const fetchAll = useServerFn(getAllWithdrawals);
-  const decide = useServerFn(decideWithdrawal);
+  const decide = useServerFn(decideWithdrawal);\n  const refreshPayout = useServerFn(refreshMoolreWithdrawal);\n  const cancelPayout = useServerFn(cancelUnsubmittedMoolreWithdrawal);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("pending");
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -34,6 +34,33 @@ function AdminWithdrawals() {
       qc.invalidateQueries({ queryKey: ["admin-withdrawals"] });
     } catch (err: any) {
       toast.error(err?.message ?? "Action failed");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const checkMoolre = async (id: string) => {
+    setBusyId(id);
+    try {
+      const result = await refreshPayout({ data: { id } });
+      toast.success(`Moolre status: ${String(result.payoutStatus).replaceAll("_", " ")}`);
+      await qc.invalidateQueries({ queryKey: ["admin-withdrawals"] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not check Moolre status");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const cancelMoolre = async (id: string) => {
+    if (!confirm("Cancel this payout and return the reserved money to the seller? This is allowed only when no transfer was submitted to Moolre.")) return;
+    setBusyId(id);
+    try {
+      await cancelPayout({ data: { id } });
+      toast.success("Withdrawal cancelled and funds returned");
+      await qc.invalidateQueries({ queryKey: ["admin-withdrawals"] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not cancel this payout");
     } finally {
       setBusyId(null);
     }
@@ -87,7 +114,28 @@ function AdminWithdrawals() {
               {r.payout_status && r.payout_status !== "not_started" ? (
                 <div className="mt-3 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
                   Moolre payout: <span className="font-semibold capitalize">{String(r.payout_status).replaceAll("_", " ")}</span>
-                  <p className="mt-1">This request is reserved for automated payout processing. Manual paid/reject actions are locked until Moolre confirms the outcome.</p>
+                  <p className="mt-1">Manual paid/reject actions are locked while Moolre is involved. Only a confirmed Moolre status can complete or refund this payout.</p>
+                  {r.payout_last_error && <p className="mt-1 text-destructive">{r.payout_last_error}</p>}
+                  {(r.payout_status === "processing" || r.payout_status === "needs_review") && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => checkMoolre(r.id)}
+                        disabled={busyId === r.id}
+                        className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+                      >
+                        {busyId === r.id ? "Checking…" : "Check Moolre status"}
+                      </button>
+                      {r.payout_status === "needs_review" && (
+                        <button
+                          onClick={() => cancelMoolre(r.id)}
+                          disabled={busyId === r.id}
+                          className="rounded-md bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground disabled:opacity-60"
+                        >
+                          Cancel & return funds
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (r.status === "pending" || r.status === "approved") ? (
                 <div className="mt-3 flex flex-wrap gap-2">
