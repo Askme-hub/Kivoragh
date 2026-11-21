@@ -114,7 +114,7 @@ function StatusBadge({ status }: { status: string }) {
 
 const CANCELLABLE = ["pending_payment", "placed", "pending_confirmation"];
 
-function CancelBlock({ order }: { order: any }) {
+function CancelBlock({ order, foodStatus }: { order: any; foodStatus?: string | null }) {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const storeCreditApplied = Number(order.store_credit_applied ?? 0);
@@ -138,10 +138,17 @@ function CancelBlock({ order }: { order: any }) {
     return null;
   }
   const shippedItem = (order.order_items ?? []).some((i: any) => i.fulfillment_status === "shipped" || i.fulfillment_status === "delivered");
-  if (!CANCELLABLE.includes(order.status) || shippedItem)
+  const foodOrderInProgress = Boolean(foodStatus && foodStatus !== "placed");
+  if (foodStatus === "completed")
+    return (
+      <p className="mx-4 mt-3 text-xs text-success text-center">
+        This food order has been completed and delivered. It can no longer be cancelled.
+      </p>
+    );
+  if (!CANCELLABLE.includes(order.status) || shippedItem || foodOrderInProgress)
     return (
       <p className="mx-4 mt-3 text-xs text-muted-foreground text-center">
-        This order is already being prepared or dispatched, so it can't be cancelled. Need help? Contact Support.
+        This order is already being prepared, dispatched or fulfilled, so it can't be cancelled. Need help? Contact Support.
       </p>
     );
   const cancel = async () => {
@@ -244,12 +251,29 @@ function OrderDetails() {
 
   const cancelled = data.status === "cancelled";
   const displayStatus = data.status === "cancelled" ? "cancelled" : (foodOrderDetails?.status ?? data.status);
-  const activeStatusFlow = foodOrderDetails && data.status !== "cancelled" ? FOOD_STATUS_FLOW : STATUS_FLOW;
+  const activeStatusFlow = foodOrderDetails && data.status !== "cancelled"
+    ? foodOrderDetails.fulfillment_method === "pickup"
+      ? ["placed", "accepted", "preparing", "ready_for_pickup", "completed"]
+      : ["placed", "accepted", "preparing", "out_for_delivery", "completed"]
+    : STATUS_FLOW;
   const currentIdx = activeStatusFlow.indexOf(displayStatus);
   const history: { status: string; created_at: string }[] = (data.order_status_history ?? [])
     .slice()
     .sort((a: any, b: any) => +new Date(a.created_at) - +new Date(b.created_at));
   const historyMap = new Map(history.map((h) => [h.status, h.created_at]));
+  if (foodOrderDetails) {
+    const foodTimestamps: Record<string, string | null> = {
+      placed: foodOrderDetails.created_at,
+      accepted: foodOrderDetails.accepted_at,
+      preparing: foodOrderDetails.preparing_at,
+      ready_for_pickup: foodOrderDetails.ready_at,
+      out_for_delivery: foodOrderDetails.dispatched_at,
+      completed: foodOrderDetails.completed_at,
+    };
+    Object.entries(foodTimestamps).forEach(([status, timestamp]) => {
+      if (timestamp) historyMap.set(status, timestamp);
+    });
+  }
 
   const subtotal = Number(data.total) - Number(data.shipping_fee ?? 0) + Number(data.discount ?? 0);
 
@@ -308,7 +332,7 @@ function OrderDetails() {
                 const reached = i <= currentIdx;
                 const isCurrent = i === currentIdx;
                 const at = historyMap.get(s);
-                const isLastStep = i === STATUS_FLOW.length - 1;
+                const isLastStep = i === activeStatusFlow.length - 1;
 
                 return (
                   <li key={s} className="flex gap-3 relative">
@@ -550,7 +574,7 @@ function OrderDetails() {
         ))}
       </div>
 
-      <CancelBlock order={data} />
+      <CancelBlock order={data} foodStatus={foodOrderDetails?.status ?? null} />
 
       {/* Need help */}
       <div className="px-4 py-4 mt-2 text-center">
