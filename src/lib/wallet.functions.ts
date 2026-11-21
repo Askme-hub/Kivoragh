@@ -38,7 +38,7 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
     }
     const channel = moolreChannelForProvider(account.provider);
     if (!channel) throw new Error("This mobile money network is not supported for automatic payouts.");
-    if (!process.env.FIXIE_SOCKS_URL || !process.env.MOOLRE_API_KEY || !process.env.MOOLRE_API_USER || !process.env.MOOLRE_ACCOUNT_NUMBER) {
+    if (!(process.env.FIXIE_SOCKS_URL || process.env.FIXIE_SOCKS_HOST) || !process.env.MOOLRE_API_KEY || !process.env.MOOLRE_API_USER || !process.env.MOOLRE_ACCOUNT_NUMBER) {
       throw new Error("Automatic payouts are not ready yet. Please contact Kivora support; your wallet balance has not been reserved.");
     }
     const receiver = toLocalPhone(String(account.account_number));
