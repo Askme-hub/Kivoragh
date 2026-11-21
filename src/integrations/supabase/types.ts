@@ -104,6 +104,67 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_events: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          event_key: string | null
+          event_type: string
+          id: string
+          metadata: Json
+          order_id: string | null
+          product_id: string | null
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          event_key?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          product_id?: string | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          event_key?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          product_id?: string | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_events_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -389,6 +450,107 @@ export type Database = {
         }
         Relationships: []
       }
+      food_order_details: {
+        Row: {
+          accepted_at: string | null
+          completed_at: string | null
+          created_at: string
+          delivery_fee: number
+          dispatched_at: string | null
+          fulfillment_method: string
+          order_id: string
+          preparation_minutes: number
+          preparing_at: string | null
+          ready_at: string | null
+          requested_for: string | null
+          seller_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          delivery_fee?: number
+          dispatched_at?: string | null
+          fulfillment_method: string
+          order_id: string
+          preparation_minutes?: number
+          preparing_at?: string | null
+          ready_at?: string | null
+          requested_for?: string | null
+          seller_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          delivery_fee?: number
+          dispatched_at?: string | null
+          fulfillment_method?: string
+          order_id?: string
+          preparation_minutes?: number
+          preparing_at?: string | null
+          ready_at?: string | null
+          requested_for?: string | null
+          seller_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "food_order_details_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      food_seller_settings: {
+        Row: {
+          accepting_orders: boolean
+          closes_at: string
+          created_at: string
+          days_open: string[]
+          default_preparation_minutes: number
+          is_food_seller: boolean
+          opens_at: string
+          scheduled_orders_enabled: boolean
+          seller_id: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          accepting_orders?: boolean
+          closes_at?: string
+          created_at?: string
+          days_open?: string[]
+          default_preparation_minutes?: number
+          is_food_seller?: boolean
+          opens_at?: string
+          scheduled_orders_enabled?: boolean
+          seller_id: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          accepting_orders?: boolean
+          closes_at?: string
+          created_at?: string
+          days_open?: string[]
+          default_preparation_minutes?: number
+          is_food_seller?: boolean
+          opens_at?: string
+          scheduled_orders_enabled?: boolean
+          seller_id?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inbox_messages: {
         Row: {
           body: string
@@ -419,6 +581,138 @@ export type Database = {
           read?: boolean
           title?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      marketing_campaigns: {
+        Row: {
+          budget: number | null
+          campaign_type: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          ends_at: string | null
+          id: string
+          name: string
+          source_id: string | null
+          source_type: string | null
+          starts_at: string | null
+          status: string
+          target_config: Json
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          budget?: number | null
+          campaign_type: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          name: string
+          source_id?: string | null
+          source_type?: string | null
+          starts_at?: string | null
+          status?: string
+          target_config?: Json
+          target_type?: string
+          updated_at?: string
+        }
+        Update: {
+          budget?: number | null
+          campaign_type?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          name?: string
+          source_id?: string | null
+          source_type?: string | null
+          starts_at?: string | null
+          status?: string
+          target_config?: Json
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      marketing_wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          description: string
+          id: string
+          idempotency_key: string
+          order_id: string | null
+          referral_event_id: string | null
+          status: string
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          description: string
+          id?: string
+          idempotency_key: string
+          order_id?: string | null
+          referral_event_id?: string | null
+          status?: string
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string
+          id?: string
+          idempotency_key?: string
+          order_id?: string | null
+          referral_event_id?: string | null
+          status?: string
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_wallet_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_wallet_transactions_referral_event_id_fkey"
+            columns: ["referral_event_id"]
+            isOneToOne: false
+            referencedRelation: "referral_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_wallets: {
+        Row: {
+          currency: string
+          promotional_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          currency?: string
+          promotional_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          currency?: string
+          promotional_balance?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -679,8 +973,8 @@ export type Database = {
           refund_status: string
           refunded_at: string | null
           shipping_fee: number
-          store_credit_applied: number
           status: string
+          store_credit_applied: number
           total: number
           user_id: string
         }
@@ -711,8 +1005,8 @@ export type Database = {
           refund_status?: string
           refunded_at?: string | null
           shipping_fee?: number
-          store_credit_applied?: number
           status?: string
+          store_credit_applied?: number
           total: number
           user_id: string
         }
@@ -743,8 +1037,8 @@ export type Database = {
           refund_status?: string
           refunded_at?: string | null
           shipping_fee?: number
-          store_credit_applied?: number
           status?: string
+          store_credit_applied?: number
           total?: number
           user_id?: string
         }
@@ -980,6 +1274,132 @@ export type Database = {
           id?: string
           p256dh?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          updated_at: string
+          user_id: string
+          user_type: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id: string
+          user_type: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id?: string
+          user_type?: string
+        }
+        Relationships: []
+      }
+      referral_events: {
+        Row: {
+          created_at: string
+          currency: string
+          event_type: string
+          id: string
+          qualification_amount: number | null
+          qualified_at: string | null
+          qualified_order_id: string | null
+          referral_code_id: string
+          referred_user_id: string
+          referred_user_type: string
+          referrer_user_id: string
+          source: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          event_type: string
+          id?: string
+          qualification_amount?: number | null
+          qualified_at?: string | null
+          qualified_order_id?: string | null
+          referral_code_id: string
+          referred_user_id: string
+          referred_user_type: string
+          referrer_user_id: string
+          source?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          event_type?: string
+          id?: string
+          qualification_amount?: number | null
+          qualified_at?: string | null
+          qualified_order_id?: string | null
+          referral_code_id?: string
+          referred_user_id?: string
+          referred_user_type?: string
+          referrer_user_id?: string
+          source?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_events_qualified_order_id_fkey"
+            columns: ["qualified_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_events_referral_code_id_fkey"
+            columns: ["referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "referral_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_settings: {
+        Row: {
+          currency: string
+          customer_min_order_amount: number
+          customer_referrer_reward: number
+          enabled: boolean
+          id: boolean
+          seller_referrer_reward: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          currency?: string
+          customer_min_order_amount?: number
+          customer_referrer_reward?: number
+          enabled?: boolean
+          id?: boolean
+          seller_referrer_reward?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          currency?: string
+          customer_min_order_amount?: number
+          customer_referrer_reward?: number
+          enabled?: boolean
+          id?: boolean
+          seller_referrer_reward?: number
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -1418,10 +1838,41 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["subscription_plan"]
       }
+      apply_store_credit_to_order: {
+        Args: { _order_id: string; _requested_amount?: number }
+        Returns: {
+          amount_due: number
+          applied: number
+          balance: number
+        }[]
+      }
       buyer_cancel_order: { Args: { _order_id: string }; Returns: string }
+      claim_referral_code: {
+        Args: { _code: string; _source?: string }
+        Returns: {
+          referred_user_type: string
+          referrer_user_id: string
+        }[]
+      }
+      complete_referral_event: {
+        Args: {
+          _amount: number
+          _event_id: string
+          _event_type: string
+          _order_id: string
+        }
+        Returns: undefined
+      }
       confirm_order_received: {
         Args: { _order_id: string }
         Returns: undefined
+      }
+      get_or_create_my_referral_code: {
+        Args: never
+        Returns: {
+          code: string
+          user_type: string
+        }[]
       }
       has_role: {
         Args: {
@@ -1437,6 +1888,29 @@ export type Database = {
       is_order_seller: {
         Args: { _order_id: string; _user_id: string }
         Returns: boolean
+      }
+      public_food_sellers: {
+        Args: never
+        Returns: {
+          accepting_orders: boolean
+          banner_url: string
+          bio: string
+          business_category: string
+          closes_at: string
+          days_open: string[]
+          default_preparation_minutes: number
+          is_open_now: boolean
+          location: string
+          logo_url: string
+          opens_at: string
+          product_count: number
+          scheduled_orders_enabled: boolean
+          shop_name: string
+          slug: string
+          user_id: string
+          verification_status: string
+          whatsapp_number: string
+        }[]
       }
       public_seller_badge: {
         Args: { _seller_id: string }
@@ -1499,6 +1973,11 @@ export type Database = {
         }
         Returns: string
       }
+      record_signup_referral: {
+        Args: { _code: string; _referred_user_id: string; _source?: string }
+        Returns: undefined
+      }
+      referral_program_is_enabled: { Args: never; Returns: boolean }
       release_seller_escrow: { Args: { _seller_id: string }; Returns: number }
       slugify: { Args: { _txt: string }; Returns: string }
       unique_shop_slug: {
