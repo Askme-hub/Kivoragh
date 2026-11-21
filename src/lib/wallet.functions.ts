@@ -260,10 +260,10 @@ export const testMoolrePayoutConnection = createServerFn({ method: "POST" })
     if (!(process.env.FIXIE_SOCKS_URL || process.env.FIXIE_SOCKS_HOST)) {
       throw new Error("Fixie SOCKS secret is missing.");
     }
-    const result = await moolrePayoutRequest("/open/transact/status", {
+    // Moolre documents Account Status as a harmless private-key connectivity check.
+    // It verifies the wallet credentials without looking up or initiating a transaction.
+    const result = await moolrePayoutRequest("/open/account/status", {
       type: 1,
-      idtype: 1,
-      id: "KIVORA-CONNECTION-CHECK",
     });
     const code = result.code ? String(result.code) : "No response code";
     const message = Array.isArray(result.message)
