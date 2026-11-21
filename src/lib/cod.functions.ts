@@ -38,6 +38,7 @@ export const placeCODOrder = createServerFn({ method: "POST" })
         coupon_code: z.string().trim().max(50).optional(),
         use_store_credit: z.boolean().optional().default(false),
         store_credit_amount: z.number().min(0).max(1000000000).optional(),
+        food_order: z.object({ scheduled_for: z.string().datetime().nullable().optional() }).optional(),
       })
       .parse(input)
   )
@@ -95,6 +96,10 @@ export const placeCODOrder = createServerFn({ method: "POST" })
           throw new Error(`Pay on Delivery is only available for shops in ${data.delivery.region}. ${far.map((s: any) => s.shop_name).join(", ")} ships from another region — please pay online.`);
       }
     }
+
+    // Validate food seller ownership, opening hours and scheduling on the server.
+    const { validateFoodCheckout, saveFoodOrderDetails } = await import("./food-orders.server");
+    const foodOrderDetails = await validateFoodCheckout(supabaseAdmin, data.items, data.delivery, data.food_order);
 
     // Server-side totals (never trust the client)
     const itemsTotal = data.items.reduce((a, i) => a + i.price * i.qty, 0);
@@ -169,6 +174,13 @@ if (total <= 0) throw new Error("Invalid cart total");
     if (ie) {
       await supabaseAdmin.from("orders").delete().eq("id", order.id);
       throw new Error(ie.message);
+    }
+
+    try {
+      await saveFoodOrderDetails(supabaseAdmin, order.id, foodOrderDetails, shipping);
+    } catch (foodError: any) {
+      await supabaseAdmin.from("orders").delete().eq("id", order.id);
+      throw new Error(foodError?.message ?? "Could not save food order details");
     }
 
     let storeCreditApplied = 0;

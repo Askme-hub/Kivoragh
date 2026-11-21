@@ -91,6 +91,18 @@ function SellerOrderDetail() {
         </div>
       </div>
 
+      {order.food_order && (
+        <div className="bg-card border border-primary/20 rounded-xl p-4">
+          <h2 className="font-bold text-sm mb-3">Food order instructions</h2>
+          <dl className="space-y-2 text-sm">
+            <Row label="Method" value={order.food_order.fulfillment_method === "pickup" ? "Customer pickup" : "Door delivery"} />
+            <Row label="Timing" value={order.food_order.requested_for ? new Date(order.food_order.requested_for).toLocaleString("en-GH", { dateStyle: "medium", timeStyle: "short" }) : "Prepare as soon as possible"} />
+            <Row label="Prep time" value={`${order.food_order.preparation_minutes} minutes`} />
+            <Row label="Food status" value={order.food_order.status.replaceAll("_", " ")} />
+          </dl>
+        </div>
+      )}
+
       <div className="bg-card border border-border rounded-xl p-4">
         <h2 className="font-bold text-sm mb-2">Customer & Delivery</h2>
         <dl className="text-sm space-y-1">

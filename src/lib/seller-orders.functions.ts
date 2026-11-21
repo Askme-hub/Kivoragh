@@ -33,6 +33,7 @@ export type SellerOrder = {
   payment_method: string;
   order_total: number;
   sole_seller: boolean;
+  food_order: { fulfillment_method: string; requested_for: string | null; preparation_minutes: number; status: string; delivery_fee: number } | null;
   shop: {
     shop_name: string;
     phone: string | null;
@@ -74,8 +75,9 @@ async function buildSellerOrders(
     .select("id, email, display_name")
     .in("id", userIds);
   const pmap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
-  const [{ data: allItems }, { data: shop }] = await Promise.all([
+  const [{ data: allItems }, { data: foodDetails }, { data: shop }] = await Promise.all([
     supabaseAdmin.from("order_items").select("order_id, seller_id").in("order_id", orderIds),
+    supabaseAdmin.from("food_order_details").select("order_id, fulfillment_method, requested_for, preparation_minutes, status, delivery_fee").in("order_id", orderIds),
     supabaseAdmin
       .from("seller_profiles")
       .select("shop_name, phone, store_region, location, slug")
@@ -116,6 +118,7 @@ async function buildSellerOrders(
       sole_seller: (allItems ?? [])
         .filter((x: any) => x.order_id === o.id)
         .every((x: any) => x.seller_id === userId),
+      food_order: (() => { const f: any = (foodDetails ?? []).find((x: any) => x.order_id === o.id); return f ? { fulfillment_method: f.fulfillment_method, requested_for: f.requested_for, preparation_minutes: Number(f.preparation_minutes), status: f.status, delivery_fee: Number(f.delivery_fee) } : null; })(),
       shop: shop
         ? {
             shop_name: shop.shop_name,

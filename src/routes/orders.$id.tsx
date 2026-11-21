@@ -173,6 +173,21 @@ function OrderDetails() {
     refetchInterval: 15000,
   });
 
+  const { data: foodOrderDetails } = useQuery({
+    queryKey: ["food-order-details", id],
+    enabled: Boolean(data),
+    queryFn: async () => {
+      const { data: details, error } = await (supabase as any)
+        .from("food_order_details")
+        .select("fulfillment_method, requested_for, preparation_minutes, status")
+        .eq("order_id", id)
+        .maybeSingle();
+      if (error) throw error;
+      return details;
+    },
+    refetchInterval: 15000,
+  });
+
   const productIds: string[] = (data?.order_items ?? []).map((i: any) => i.product_id).filter(Boolean);
   const { data: stockMap } = useQuery({
     queryKey: ["order-stock", id, productIds.join(",")],
@@ -385,6 +400,20 @@ function OrderDetails() {
           </div>
         </div>
       </div>
+
+      {foodOrderDetails && (
+        <div className="bg-card mt-2 border-b border-border">
+          <div className="px-4 py-3 border-b border-border flex items-center gap-2 font-bold text-sm">
+            <Clock size={16} className="text-primary" /> Food Order Details
+          </div>
+          <div className="px-4 py-4 space-y-2 text-sm">
+            <div className="flex justify-between gap-3"><span className="text-muted-foreground">Preparation</span><span className="font-semibold">{foodOrderDetails.preparation_minutes} minutes</span></div>
+            <div className="flex justify-between gap-3"><span className="text-muted-foreground">Order timing</span><span className="font-semibold text-right">{foodOrderDetails.requested_for ? new Date(foodOrderDetails.requested_for).toLocaleString("en-GH", { dateStyle: "medium", timeStyle: "short" }) : "As soon as possible"}</span></div>
+            <div className="flex justify-between gap-3"><span className="text-muted-foreground">Food order status</span><span className="font-semibold capitalize">{String(foodOrderDetails.status).replaceAll("_", " ")}</span></div>
+            <p className="text-xs text-muted-foreground">The food seller will prepare your order for the selected time and fulfil it using your chosen pickup or delivery method.</p>
+          </div>
+        </div>
+      )}
 
       {/* Payment summary */}
       <div className="bg-card mt-2 border-b border-border">

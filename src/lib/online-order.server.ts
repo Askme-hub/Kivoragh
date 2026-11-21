@@ -6,6 +6,7 @@ export type OnlineOrderInput = {
   items: { product_id?: string | null; name: string; price: number; old_price?: number | null; image_url?: string | null; qty: number }[];
   delivery: { name: string; phone: string; region: string; city: string; address: string; notes?: string; delivery_type: "door" | "pickup"; pickup_station?: string };
   coupon_code?: string;
+  food_order?: { scheduled_for?: string | null };
 };
 
 export async function createPendingOnlineOrder(userId: string, data: OnlineOrderInput) {
@@ -31,6 +32,10 @@ export async function createPendingOnlineOrder(userId: string, data: OnlineOrder
       if (p.stock < i.qty) throw new Error(`Only ${p.stock} unit(s) left for ${p.name}`);
       return { ...i, name: p.name, price: flashPrice.get(p.id) ?? Number(p.price), old_price: p.old_price, image_url: p.image_url };
     }) };
+
+    // Validate food seller ownership, opening hours and scheduling on the server.
+    const { validateFoodCheckout, saveFoodOrderDetails } = await import("./food-orders.server");
+    const foodOrderDetails = await validateFoodCheckout(supabaseAdmin, data.items, data.delivery, data.food_order);
 
     // server-side total (don't trust client)
     const itemsTotal = data.items.reduce((a, i) => a + i.price * i.qty, 0);
@@ -111,6 +116,13 @@ export async function createPendingOnlineOrder(userId: string, data: OnlineOrder
     if (ie) {
       await supabaseAdmin.from("orders").delete().eq("id", order.id);
       throw new Error(ie.message);
+    }
+
+    try {
+      await saveFoodOrderDetails(supabaseAdmin, order.id, foodOrderDetails, shipping);
+    } catch (foodError: any) {
+      await supabaseAdmin.from("orders").delete().eq("id", order.id);
+      throw new Error(foodError?.message ?? "Could not save food order details");
     }
 
     return { order, total, email };

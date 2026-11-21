@@ -59,6 +59,7 @@ function SellerOrders() {
                 </span>
               </div>
             </div>
+            {o.food_order?.requested_for && <p className="mt-2 text-xs font-semibold text-primary">Scheduled food order · {new Date(o.food_order.requested_for).toLocaleString("en-GH", { dateStyle: "medium", timeStyle: "short" })}</p>}
             <p className="text-xs mt-2 text-foreground/80 line-clamp-1">
               {o.items.map((i) => `${i.qty}× ${i.name}`).join(", ")}
             </p>

@@ -246,6 +246,13 @@
       "when": 1795232000000,
       "tag": "0034_kivora_food_discovery",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1795233600000,
+      "tag": "0035_kivora_food_ordering_core",
+      "breakpoints": true
     }
   ]
 }
