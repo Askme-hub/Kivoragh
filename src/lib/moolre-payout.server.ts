@@ -135,7 +135,7 @@ export async function moolrePayoutRequest(
 
     const proxyReader = socket.readable.getReader();
     const proxyHeader = await readUntilHeaderEnd(proxyReader);
-    await proxyReader.cancel().catch(() => undefined);
+    proxyReader.releaseLock();
     const proxyStatus = Number(proxyHeader.split("\r\n", 1)[0]?.split(" ")[1]);
     if (proxyStatus !== 200) throw new Error(`Fixie could not open the secure Moolre tunnel (HTTP ${proxyStatus || "unknown"}).`);
 
