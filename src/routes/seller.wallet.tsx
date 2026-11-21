@@ -334,7 +334,7 @@ function SellerWallet() {
                 Withdrawal amount (GHS)
                 <input type="number" min="1" max={balance} step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-12 w-full rounded-xl border border-border bg-background px-3 text-lg font-bold text-foreground outline-none focus:border-primary" placeholder="0.00" />
               </label>
-              <p className="text-xs leading-relaxed text-muted-foreground">Your request will be reviewed and paid to the selected payout account. You can track its status below.</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">Your request is sent to Moolre after the registered account name is verified. You can track its status below.</p>
               <button type="submit" disabled={busy || balance <= 0 || !selectedAccount} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
                 {busy ? "Submitting request…" : "Request withdrawal"}
               </button>
