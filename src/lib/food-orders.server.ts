@@ -56,6 +56,7 @@ export async function validateFoodCheckout(
     .in("id", productIds);
   if (productsError) throw new Error(productsError.message);
 
+  if (!products || products.length !== items.length) throw new Error("One or more products are no longer available.");
   const sellerIds = [...new Set((products ?? []).map((product: any) => product.seller_id).filter(Boolean))] as string[];
   if (sellerIds.length === 0) return null;
 
@@ -67,7 +68,7 @@ export async function validateFoodCheckout(
   if (settingsError) throw new Error(settingsError.message);
   if (!foodSettings?.length) return null;
 
-  if (sellerIds.length !== 1 || foodSettings.length !== 1 || sellerIds[0] !== foodSettings[0].seller_id) {
+  if (sellerIds.length !== 1 || foodSettings.length !== 1 || sellerIds[0] !== foodSettings[0].seller_id || products.some((product: any) => product.seller_id !== foodSettings[0].seller_id)) {
     throw new Error("Food orders must contain products from one food seller only. Please remove items from other shops and place a separate order.");
   }
 
