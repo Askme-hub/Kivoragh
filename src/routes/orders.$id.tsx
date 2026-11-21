@@ -200,7 +200,7 @@ function OrderDetails() {
     refetchOnWindowFocus: true,
   });
 
-  const { data: foodOrderDetails } = useQuery({
+  const { data: foodOrderDetails, isLoading: isFoodOrderDetailsLoading } = useQuery({
     queryKey: ["food-order-details", id],
     enabled: Boolean(data),
     queryFn: async () => {
@@ -573,7 +573,7 @@ function OrderDetails() {
         ))}
       </div>
 
-      <CancelBlock order={data} foodStatus={foodOrderDetails?.status ?? null} />
+      {!isFoodOrderDetailsLoading && <CancelBlock order={data} foodStatus={foodOrderDetails?.status ?? null} />}
 
       {/* Need help */}
       <div className="px-4 py-4 mt-2 text-center">
