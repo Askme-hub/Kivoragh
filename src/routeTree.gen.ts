@@ -14,8 +14,8 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CategoriesRouteImport } from './routes/categories'
-import { Route as FoodRouteImport } from './routes/food'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as FoodRouteImport } from './routes/food'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as InboxRouteImport } from './routes/inbox'
@@ -25,6 +25,7 @@ import { Route as MyReviewsRouteImport } from './routes/my-reviews'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RecentlyViewedRouteImport } from './routes/recently-viewed'
+import { Route as ReferralsRouteImport } from './routes/referrals'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReturnsRouteImport } from './routes/returns'
 import { Route as SearchRouteImport } from './routes/search'
@@ -48,6 +49,7 @@ import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminPopupsRouteImport } from './routes/admin.popups'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
+import { Route as AdminReferralsRouteImport } from './routes/admin.referrals'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminSellersRouteImport } from './routes/admin.sellers'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
@@ -106,14 +108,14 @@ const CategoriesRoute = CategoriesRouteImport.update({
   path: '/categories',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FoodRoute = FoodRouteImport.update({
-  id: '/food',
-  path: '/food',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FoodRoute = FoodRouteImport.update({
+  id: '/food',
+  path: '/food',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -159,6 +161,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const RecentlyViewedRoute = RecentlyViewedRouteImport.update({
   id: '/recently-viewed',
   path: '/recently-viewed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReferralsRoute = ReferralsRouteImport.update({
+  id: '/referrals',
+  path: '/referrals',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -274,6 +281,11 @@ const AdminPopupsRoute = AdminPopupsRouteImport.update({
 const AdminProductsRoute = AdminProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReferralsRoute = AdminReferralsRouteImport.update({
+  id: '/referrals',
+  path: '/referrals',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminReportsRoute = AdminReportsRouteImport.update({
@@ -444,8 +456,8 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
-  '/food': typeof FoodRoute
   '/checkout': typeof CheckoutRoute
+  '/food': typeof FoodRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
   '/inbox': typeof InboxRoute
@@ -455,6 +467,7 @@ export interface FileRoutesByFullPath {
   '/orders': typeof OrdersRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/recently-viewed': typeof RecentlyViewedRoute
+  '/referrals': typeof ReferralsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/returns': typeof ReturnsRoute
   '/search': typeof SearchRoute
@@ -477,6 +490,7 @@ export interface FileRoutesByFullPath {
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/popups': typeof AdminPopupsRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/sellers': typeof AdminSellersRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
@@ -516,8 +530,8 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
-  '/food': typeof FoodRoute
   '/checkout': typeof CheckoutRoute
+  '/food': typeof FoodRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
   '/inbox': typeof InboxRoute
@@ -526,6 +540,7 @@ export interface FileRoutesByTo {
   '/my-reviews': typeof MyReviewsRoute
   '/privacy': typeof PrivacyRoute
   '/recently-viewed': typeof RecentlyViewedRoute
+  '/referrals': typeof ReferralsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/returns': typeof ReturnsRoute
   '/search': typeof SearchRoute
@@ -547,6 +562,7 @@ export interface FileRoutesByTo {
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/popups': typeof AdminPopupsRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/sellers': typeof AdminSellersRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
@@ -587,8 +603,8 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
-  '/food': typeof FoodRoute
   '/checkout': typeof CheckoutRoute
+  '/food': typeof FoodRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
   '/inbox': typeof InboxRoute
@@ -598,6 +614,7 @@ export interface FileRoutesById {
   '/orders': typeof OrdersRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/recently-viewed': typeof RecentlyViewedRoute
+  '/referrals': typeof ReferralsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/returns': typeof ReturnsRoute
   '/search': typeof SearchRoute
@@ -620,6 +637,7 @@ export interface FileRoutesById {
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/popups': typeof AdminPopupsRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/sellers': typeof AdminSellersRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
@@ -662,8 +680,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cart'
     | '/categories'
-    | '/food'
     | '/checkout'
+    | '/food'
     | '/forgot-password'
     | '/help'
     | '/inbox'
@@ -673,6 +691,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/privacy'
     | '/recently-viewed'
+    | '/referrals'
     | '/reset-password'
     | '/returns'
     | '/search'
@@ -695,6 +714,7 @@ export interface FileRouteTypes {
     | '/admin/orders'
     | '/admin/popups'
     | '/admin/products'
+    | '/admin/referrals'
     | '/admin/reports'
     | '/admin/sellers'
     | '/admin/subscriptions'
@@ -734,8 +754,8 @@ export interface FileRouteTypes {
     | '/account'
     | '/cart'
     | '/categories'
-    | '/food'
     | '/checkout'
+    | '/food'
     | '/forgot-password'
     | '/help'
     | '/inbox'
@@ -744,6 +764,7 @@ export interface FileRouteTypes {
     | '/my-reviews'
     | '/privacy'
     | '/recently-viewed'
+    | '/referrals'
     | '/reset-password'
     | '/returns'
     | '/search'
@@ -765,6 +786,7 @@ export interface FileRouteTypes {
     | '/admin/orders'
     | '/admin/popups'
     | '/admin/products'
+    | '/admin/referrals'
     | '/admin/reports'
     | '/admin/sellers'
     | '/admin/subscriptions'
@@ -804,8 +826,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cart'
     | '/categories'
-    | '/food'
     | '/checkout'
+    | '/food'
     | '/forgot-password'
     | '/help'
     | '/inbox'
@@ -815,6 +837,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/privacy'
     | '/recently-viewed'
+    | '/referrals'
     | '/reset-password'
     | '/returns'
     | '/search'
@@ -837,6 +860,7 @@ export interface FileRouteTypes {
     | '/admin/orders'
     | '/admin/popups'
     | '/admin/products'
+    | '/admin/referrals'
     | '/admin/reports'
     | '/admin/sellers'
     | '/admin/subscriptions'
@@ -878,8 +902,8 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   CartRoute: typeof CartRoute
   CategoriesRoute: typeof CategoriesRoute
-  FoodRoute: typeof FoodRoute
   CheckoutRoute: typeof CheckoutRoute
+  FoodRoute: typeof FoodRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   HelpRoute: typeof HelpRoute
   InboxRoute: typeof InboxRoute
@@ -889,6 +913,7 @@ export interface RootRouteChildren {
   OrdersRoute: typeof OrdersRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   RecentlyViewedRoute: typeof RecentlyViewedRoute
+  ReferralsRoute: typeof ReferralsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ReturnsRoute: typeof ReturnsRoute
   SearchRoute: typeof SearchRoute
@@ -946,18 +971,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/food': {
-      id: '/food'
-      path: '/food'
-      fullPath: '/food'
-      preLoaderRoute: typeof FoodRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/checkout': {
       id: '/checkout'
       path: '/checkout'
       fullPath: '/checkout'
       preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/food': {
+      id: '/food'
+      path: '/food'
+      fullPath: '/food'
+      preLoaderRoute: typeof FoodRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -1021,6 +1046,13 @@ declare module '@tanstack/react-router' {
       path: '/recently-viewed'
       fullPath: '/recently-viewed'
       preLoaderRoute: typeof RecentlyViewedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/referrals': {
+      id: '/referrals'
+      path: '/referrals'
+      fullPath: '/referrals'
+      preLoaderRoute: typeof ReferralsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -1182,6 +1214,13 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/admin/products'
       preLoaderRoute: typeof AdminProductsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/referrals': {
+      id: '/admin/referrals'
+      path: '/referrals'
+      fullPath: '/admin/referrals'
+      preLoaderRoute: typeof AdminReferralsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/reports': {
@@ -1424,6 +1463,7 @@ interface AdminRouteChildren {
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPopupsRoute: typeof AdminPopupsRoute
   AdminProductsRoute: typeof AdminProductsRoute
+  AdminReferralsRoute: typeof AdminReferralsRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminSellersRoute: typeof AdminSellersRoute
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
@@ -1445,6 +1485,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPopupsRoute: AdminPopupsRoute,
   AdminProductsRoute: AdminProductsRoute,
+  AdminReferralsRoute: AdminReferralsRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminSellersRoute: AdminSellersRoute,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,
@@ -1527,8 +1568,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   CartRoute: CartRoute,
   CategoriesRoute: CategoriesRoute,
-  FoodRoute: FoodRoute,
   CheckoutRoute: CheckoutRoute,
+  FoodRoute: FoodRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   HelpRoute: HelpRoute,
   InboxRoute: InboxRoute,
@@ -1538,6 +1579,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrdersRoute: OrdersRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   RecentlyViewedRoute: RecentlyViewedRoute,
+  ReferralsRoute: ReferralsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ReturnsRoute: ReturnsRoute,
   SearchRoute: SearchRoute,
