@@ -17,7 +17,9 @@ const FILTERS = ["all", "pending", "approved", "paid", "rejected"] as const;
 function AdminWithdrawals() {
   const qc = useQueryClient();
   const fetchAll = useServerFn(getAllWithdrawals);
-  const decide = useServerFn(decideWithdrawal);\n  const refreshPayout = useServerFn(refreshMoolreWithdrawal);\n  const cancelPayout = useServerFn(cancelUnsubmittedMoolreWithdrawal);
+  const decide = useServerFn(decideWithdrawal);
+  const refreshPayout = useServerFn(refreshMoolreWithdrawal);
+  const cancelPayout = useServerFn(cancelUnsubmittedMoolreWithdrawal);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("pending");
   const [busyId, setBusyId] = useState<string | null>(null);
 
