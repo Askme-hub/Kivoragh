@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 type FoodCheckoutItem = { product_id?: string | null; qty: number };
-type FoodCheckoutDelivery = { delivery_type: "door" | "pickup" };
+type FoodCheckoutDelivery = { delivery_type: "door" | "pickup"; pickup_station?: string };
 type FoodCheckoutOptions = { scheduled_for?: string | null } | undefined;
 
 function ghanaParts(value: Date) {
@@ -86,6 +86,9 @@ export async function validateFoodCheckout(
 
   if (delivery.delivery_type === "pickup" && (!seller?.pickup_enabled || !seller?.pickup_station)) {
     throw new Error("This food seller does not currently offer pickup. Please choose door delivery.");
+  }
+  if (delivery.delivery_type === "pickup" && (delivery.pickup_station ?? "").trim() !== String(seller?.pickup_station ?? "").trim()) {
+    throw new Error("Please select the pickup station offered by this food seller.");
   }
 
   const prepMinutes = Number(settings.default_preparation_minutes ?? 30);
