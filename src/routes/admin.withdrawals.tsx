@@ -118,7 +118,7 @@ function AdminWithdrawals() {
                   Moolre payout: <span className="font-semibold capitalize">{String(r.payout_status).replaceAll("_", " ")}</span>
                   <p className="mt-1">Manual paid/reject actions are locked while Moolre is involved. Only a confirmed Moolre status can complete or refund this payout.</p>
                   {r.payout_last_error && <p className="mt-1 text-destructive">{r.payout_last_error}</p>}
-                  {(r.payout_status === "processing" || r.payout_status === "needs_review") && (
+                  {(["queued", "validating", "processing", "needs_review"].includes(r.payout_status) && (r.payout_status !== "needs_review" || r.moolre_attempt_exists)) && (
                     <div className="mt-2 flex flex-wrap gap-2">
                       <button
                         onClick={() => checkMoolre(r.id)}
