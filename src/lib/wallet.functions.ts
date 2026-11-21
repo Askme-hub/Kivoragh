@@ -250,6 +250,33 @@ async function assertWithdrawalAdmin(userId: string) {
   if (!isAdmin) throw new Error("Only admins can manage withdrawals.");
 }
 
+
+// Read-only connectivity check. It looks up a fixed, deliberately non-existent
+// reference and never initiates a transfer or changes a wallet.
+export const testMoolrePayoutConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertWithdrawalAdmin(context.userId);
+    if (!(process.env.FIXIE_SOCKS_URL || process.env.FIXIE_SOCKS_HOST)) {
+      throw new Error("Fixie SOCKS secret is missing.");
+    }
+    const result = await moolrePayoutRequest("/open/transact/status", {
+      type: 1,
+      idtype: 1,
+      id: "KIVORA-CONNECTION-CHECK",
+    });
+    const code = result.code ? String(result.code) : "No response code";
+    const message = Array.isArray(result.message)
+      ? result.message.join(" ")
+      : String(result.message ?? result.data?.reason ?? "Moolre responded.");
+    return {
+      connected: true,
+      apiStatus: result.status ?? null,
+      code,
+      message: message.slice(0, 240),
+    };
+  });
+
 // Reconcile an uncertain Moolre payout using its original external reference.
 export const refreshMoolreWithdrawal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
