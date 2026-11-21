@@ -34,47 +34,26 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
     const method = account.method;
     const accountDetails = `${account.account_name} · ${account.account_number}${account.provider ? ` (${account.provider})` : ""}`;
 
-    await supabaseAdmin.rpc("release_seller_escrow", { _seller_id: userId });
-    const { data: wallet } = await supabaseAdmin
-      .from("seller_wallets")
-      .select("balance, pending")
-      .eq("user_id", userId)
-      .maybeSingle();
+    const { error: escrowErr } = await supabaseAdmin.rpc("release_seller_escrow", { _seller_id: userId });
+    if (escrowErr) throw new Error(escrowErr.message);
 
-    const balance = Number(wallet?.balance ?? 0);
-    if (data.amount > balance) throw new Error("Withdrawal exceeds available balance.");
+    // The database function locks the seller wallet and creates the request,
+    // reserves the funds, and records the ledger entry in one transaction.
+    const { data: requestId, error: withdrawalErr } = await supabaseAdmin.rpc(
+      "create_seller_withdrawal",
+      {
+        _seller_id: userId,
+        _amount: data.amount,
+        _payout_account_id: data.payout_account_id,
+      },
+    );
 
-    const { data: request, error: reqErr } = await supabaseAdmin
-      .from("withdrawal_requests")
-      .insert({
-        seller_id: userId,
-        amount: data.amount,
-        method,
-        account_details: accountDetails,
-        status: "pending",
-      })
-      .select()
-      .single();
-    if (reqErr) throw new Error(reqErr.message);
+    if (withdrawalErr) throw new Error(withdrawalErr.message);
+    if (!requestId || typeof requestId !== "string") {
+      throw new Error("The withdrawal request could not be created. Please try again.");
+    }
 
-    const { error: walErr } = await supabaseAdmin
-      .from("seller_wallets")
-      .update({
-        balance: balance - data.amount,
-        pending: Number(wallet?.pending ?? 0) + data.amount,
-      })
-      .eq("user_id", userId);
-    if (walErr) throw new Error(walErr.message);
-
-    await supabaseAdmin.from("transactions").insert({
-      seller_id: userId,
-      type: "withdrawal_request",
-      amount: -data.amount,
-      status: "pending",
-      description: `Withdrawal request via ${method}`,
-    });
-
-    return { id: request.id };
+    return { id: requestId };
   });
 
 const decisionSchema = z.object({
