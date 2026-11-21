@@ -306,7 +306,18 @@ export const refreshMoolreWithdrawal = createServerFn({ method: "POST" })
 
     // SS07 / an unrecognized status means Moolre has no confirmed transfer record.
     // Keep a validation-only review request cancellable; never invent a pending transfer.
-    if (req.payout_status === "needs_review" && ![0, 1, 2, 3].includes(txstatus)) {
+    if (["queued", "validating", "needs_review"].includes(req.payout_status) && ![0, 1, 2, 3].includes(txstatus)) {
+      await (supabaseAdmin as any).from("moolre_payout_attempts").update({
+        status: "needs_review",
+        moolre_code: code,
+        moolre_message: message || "No submitted transfer was found at Moolre.",
+        updated_at: new Date().toISOString(),
+      }).eq("id", attempt.id);
+      await supabaseAdmin.from("withdrawal_requests").update({
+        payout_status: "needs_review",
+        payout_last_error: message || "No submitted transfer was found at Moolre. Admin review is required.",
+        payout_updated_at: new Date().toISOString(),
+      }).eq("id", data.id);
       return { payoutStatus: "needs_review" };
     }
 
@@ -447,6 +458,12 @@ export const getAllWithdrawals = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false });
 
     const ids = [...new Set((requests ?? []).map((r) => r.seller_id))];
+    const withdrawalIds = (requests ?? []).map((r) => r.id);
+    const { data: attempts } = await (supabaseAdmin as any)
+      .from("moolre_payout_attempts")
+      .select("withdrawal_id")
+      .in("withdrawal_id", withdrawalIds.length ? withdrawalIds : ["00000000-0000-0000-0000-000000000000"]);
+    const attemptIds = new Set((attempts ?? []).map((a: any) => a.withdrawal_id));
     const { data: shops } = await supabaseAdmin
       .from("seller_profiles")
       .select("user_id, shop_name, phone")
@@ -457,5 +474,6 @@ export const getAllWithdrawals = createServerFn({ method: "GET" })
       ...r,
       shop_name: shopMap.get(r.seller_id)?.shop_name ?? "Unknown shop",
       shop_phone: shopMap.get(r.seller_id)?.phone ?? null,
+      moolre_attempt_exists: attemptIds.has(r.id),
     }));
   });
