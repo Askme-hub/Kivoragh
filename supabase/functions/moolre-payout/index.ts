@@ -23,7 +23,7 @@ Deno.serve(async (request: Request) => {
   // Only the trusted Kivora server (service-role JWT) may use this payout
   // transport. Supabase JWT verification alone also accepts ordinary users.
   const authorization = request.headers.get("Authorization") ?? "";
-  const token = authorization.match(/^Bearer\\s+(.+)$/i)?.[1];
+  const token = authorization.match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) {
     return Response.json({ error: "Unauthorized payout service caller." }, { status: 401 });
   }
