@@ -169,7 +169,7 @@ async function establishSocksTunnel(socket: CloudflareSocket, targetHost: string
 
 /** Make an HTTPS request through the authenticated Fixie SOCKS5 proxy. */
 export async function moolrePayoutRequest(
-  path: "/open/transact/validate" | "/open/transact/transfer" | "/open/transact/status",
+  path: "/open/transact/validate" | "/open/transact/transfer" | "/open/transact/status" | "/open/account/status",
   body: Record<string, unknown>,
   idempotencyKey?: string,
 ): Promise<MoolreReply> {
