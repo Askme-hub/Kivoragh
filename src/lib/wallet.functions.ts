@@ -38,9 +38,6 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
     }
     const channel = moolreChannelForProvider(account.provider);
     if (!channel) throw new Error("This mobile money network is not supported for automatic payouts.");
-    if (!process.env.FIXIE_URL || !process.env.MOOLRE_API_KEY || !process.env.MOOLRE_API_USER || !process.env.MOOLRE_ACCOUNT_NUMBER) {
-      throw new Error("Automatic payouts are not ready yet. Please contact Kivora support; your wallet balance has not been reserved.");
-    }
     const receiver = toLocalPhone(String(account.account_number));
     if (!/^0\d{9}$/.test(receiver)) throw new Error("The saved mobile money number is invalid. Update your payout account first.");
 
@@ -257,9 +254,6 @@ export const testMoolrePayoutConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertWithdrawalAdmin(context.userId);
-    if (!process.env.FIXIE_URL) {
-      throw new Error("Fixie HTTP proxy secret (FIXIE_URL) is missing.");
-    }
     // Moolre documents Account Status as a harmless private-key connectivity check.
     // It verifies the wallet credentials without looking up or initiating a transaction.
     const result = await moolrePayoutRequest("/open/account/status", {
