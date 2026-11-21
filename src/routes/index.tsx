@@ -2,7 +2,7 @@ import { useSiteContent, telHref, waNumber } from "@/lib/site-content";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Zap, Phone, ChevronRight, PackageOpen, Truck, ShieldCheck, BadgeCheck, Sparkles } from "lucide-react";
+import { Zap, Phone, ChevronRight, PackageOpen, Truck, ShieldCheck, BadgeCheck, Sparkles, UtensilsCrossed } from "lucide-react";
 
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCardSkeleton, ProductGridSkeleton } from "@/components/ProductCardSkeleton";
@@ -162,6 +162,25 @@ function Home() {
 
       <div className="px-4 mt-4">
         <InstallAppButton />
+      </div>
+
+      {/* FOOD & GROCERIES ENTRY */}
+      <div className="mt-5 px-4">
+        <Link
+          to="/food"
+          className="flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-flash px-4 py-4 text-primary-foreground shadow-soft transition hover:opacity-95"
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
+              <UtensilsCrossed size={22} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-extrabold">Food & Groceries</span>
+              <span className="mt-0.5 block text-xs text-primary-foreground/85">Discover local food sellers and browse their menus</span>
+            </span>
+          </span>
+          <ChevronRight size={21} className="shrink-0" />
+        </Link>
       </div>
 
       {/* TRUST STRIP */}
