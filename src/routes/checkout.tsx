@@ -23,6 +23,7 @@ import {
   Home,
   Building2,
   Wallet,
+  Clock3,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { formatGHC, useShop } from "@/lib/store";
@@ -379,8 +380,8 @@ function Checkout() {
   const foodBlocker = !isFoodOrder ? null
     : foodCartMixedSeller ? "Food orders must contain items from one food seller only. Remove products from other shops and place a separate order."
     : !foodSeller?.accepting_orders ? "This food seller is not accepting orders right now."
-    : foodTiming === "now" && !foodSeller.is_open_now ? "This food seller is outside opening hours. Choose a scheduled time if available."
-    : foodTiming === "scheduled" && !foodSeller.scheduled_orders_enabled ? "This food seller does not accept scheduled orders."
+    : foodTiming === "now" && !foodSeller?.is_open_now ? "This food seller is outside opening hours. Choose a scheduled time if available."
+    : foodTiming === "scheduled" && !foodSeller?.scheduled_orders_enabled ? "This food seller does not accept scheduled orders."
     : foodTiming === "scheduled" && !foodScheduleLocal ? "Choose a date and time for your food order."
     : null;
 
