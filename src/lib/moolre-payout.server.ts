@@ -1,5 +1,5 @@
 // Server-only Moolre disbursement client for Cloudflare Workers.
-// Uses Fixie's HTTP CONNECT tunnel so Moolre sees a whitelisted static egress IP.
+// Fixie SOCKS5 uses port 1080, allowing a secure TLS tunnel to Moolre from a static IP.
 type CloudflareSocket = {
   opened: Promise<unknown>;
   readable: ReadableStream<Uint8Array>;
@@ -17,16 +17,16 @@ type MoolreReply = {
 };
 
 function payoutConfig() {
-  const proxyValue = process.env.FIXIE_URL;
+  const proxyValue = process.env.FIXIE_SOCKS_URL;
   const user = process.env.MOOLRE_API_USER;
   const key = process.env.MOOLRE_API_KEY;
   const account = process.env.MOOLRE_ACCOUNT_NUMBER;
   if (!proxyValue || !user || !key || !account) {
-    throw new Error("Moolre seller payouts are not fully configured.");
+    throw new Error("Moolre seller payouts need the Fixie SOCKS URL and Moolre credentials configured.");
   }
   const proxy = new URL(proxyValue);
-  if (!["http:", "https:"].includes(proxy.protocol) || !proxy.hostname || !proxy.username || !proxy.password) {
-    throw new Error("The Fixie proxy configuration is invalid.");
+  if (!["socks5:", "socks5h:"].includes(proxy.protocol) || !proxy.hostname || !proxy.username || !proxy.password) {
+    throw new Error("The Fixie SOCKS5 URL is invalid. It must use socks5:// with its username and password.");
   }
   return { proxy, user, key, account };
 }
@@ -42,34 +42,48 @@ function joinBytes(chunks: Uint8Array[]) {
   return out;
 }
 
-async function readUntilHeaderEnd(reader: ReadableStreamDefaultReader<Uint8Array>) {
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-  while (total < 16_384) {
-    const { value, done } = await reader.read();
-    if (done || !value) throw new Error("Fixie closed the connection before completing the proxy handshake.");
-    chunks.push(value);
-    total += value.length;
-    const joined = joinBytes(chunks);
-    const text = new TextDecoder().decode(joined);
-    const marker = text.indexOf("\r\n\r\n");
-    if (marker >= 0) return text.slice(0, marker);
+class SocketByteReader {
+  private reader: ReadableStreamDefaultReader<Uint8Array>;
+  private buffered = new Uint8Array(0);
+
+  constructor(stream: ReadableStream<Uint8Array>) {
+    this.reader = stream.getReader();
   }
-  throw new Error("Fixie returned an invalid proxy handshake.");
+
+  async readExactly(length: number) {
+    while (this.buffered.length < length) {
+      const { value, done } = await this.reader.read();
+      if (done || !value) throw new Error("Fixie closed the SOCKS connection unexpectedly.");
+      this.buffered = joinBytes([this.buffered, value]);
+    }
+    const result = this.buffered.slice(0, length);
+    this.buffered = this.buffered.slice(length);
+    return result;
+  }
+
+  async readToEnd(maxBytes = 262_144) {
+    const chunks = this.buffered.length ? [this.buffered] : [];
+    let total = this.buffered.length;
+    this.buffered = new Uint8Array(0);
+    while (total < maxBytes) {
+      const { value, done } = await this.reader.read();
+      if (done) break;
+      if (!value) continue;
+      chunks.push(value);
+      total += value.length;
+    }
+    if (total >= maxBytes) throw new Error("Moolre response exceeded the allowed size.");
+    return joinBytes(chunks);
+  }
+
+  release() {
+    if (this.buffered.length) throw new Error("Unexpected extra data during the Fixie SOCKS handshake.");
+    this.reader.releaseLock();
+  }
 }
 
-async function readHttpResponse(reader: ReadableStreamDefaultReader<Uint8Array>) {
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-  while (total < 262_144) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    if (!value) continue;
-    chunks.push(value);
-    total += value.length;
-  }
-  if (total >= 262_144) throw new Error("Moolre response exceeded the allowed size.");
-  const raw = new TextDecoder().decode(joinBytes(chunks));
+async function readHttpResponse(reader: SocketByteReader) {
+  const raw = new TextDecoder().decode(await reader.readToEnd());
   const splitAt = raw.indexOf("\r\n\r\n");
   if (splitAt < 0) throw new Error("Moolre returned an incomplete HTTP response.");
   const header = raw.slice(0, splitAt);
@@ -102,42 +116,68 @@ async function readHttpResponse(reader: ReadableStreamDefaultReader<Uint8Array>)
   return json;
 }
 
-/**
- * HTTPS request through Fixie's authenticated HTTP CONNECT proxy.
- * Cloudflare Workers fetch does not consume Node's agent option, so this uses
- * the Workers TCP socket API and explicitly establishes the CONNECT tunnel.
- */
+async function establishSocksTunnel(socket: CloudflareSocket, targetHost: string, targetPort: number, username: string, password: string) {
+  const writer = socket.writable.getWriter();
+  const reader = new SocketByteReader(socket.readable);
+  const enc = new TextEncoder();
+
+  // Negotiate SOCKS5 username/password authentication (RFC 1929).
+  await writer.write(new Uint8Array([0x05, 0x01, 0x02]));
+  const method = await reader.readExactly(2);
+  if (method[0] !== 0x05 || method[1] !== 0x02) {
+    throw new Error("Fixie SOCKS5 did not accept username/password authentication.");
+  }
+
+  const u = enc.encode(decodeURIComponent(username));
+  const p = enc.encode(decodeURIComponent(password));
+  if (u.length > 255 || p.length > 255) throw new Error("Fixie SOCKS credentials are invalid.");
+  await writer.write(joinBytes([new Uint8Array([0x01, u.length]), u, new Uint8Array([p.length]), p]));
+  const auth = await reader.readExactly(2);
+  if (auth[0] !== 0x01 || auth[1] !== 0x00) throw new Error("Fixie SOCKS5 authentication failed.");
+
+  // Send CONNECT using a domain name so DNS resolution also happens via Fixie.
+  const host = enc.encode(targetHost);
+  if (host.length > 255) throw new Error("Moolre hostname is invalid.");
+  await writer.write(joinBytes([
+    new Uint8Array([0x05, 0x01, 0x00, 0x03, host.length]),
+    host,
+    new Uint8Array([(targetPort >> 8) & 0xff, targetPort & 0xff]),
+  ]));
+  const response = await reader.readExactly(4);
+  if (response[0] !== 0x05 || response[1] !== 0x00) {
+    throw new Error(`Fixie SOCKS5 could not connect to Moolre (reply ${response[1]}).`);
+  }
+
+  const atyp = response[3];
+  if (atyp === 0x01) await reader.readExactly(6);
+  else if (atyp === 0x04) await reader.readExactly(18);
+  else if (atyp === 0x03) {
+    const length = await reader.readExactly(1);
+    await reader.readExactly(length[0] + 2);
+  } else {
+    throw new Error("Fixie SOCKS5 returned an invalid address type.");
+  }
+
+  reader.release();
+  await writer.releaseLock();
+}
+
+/** Make an HTTPS request through the authenticated Fixie SOCKS5 proxy. */
 export async function moolrePayoutRequest(
   path: "/open/transact/validate" | "/open/transact/transfer" | "/open/transact/status",
   body: Record<string, unknown>,
   idempotencyKey?: string,
 ): Promise<MoolreReply> {
   const { proxy, user, key, account } = payoutConfig();
-  if (proxy.protocol !== "http:") {
-    throw new Error("Use the Fixie HTTP proxy URL (http://…:80) for this Cloudflare Worker connection.");
-  }
-
   const { connect } = await import("cloudflare:sockets");
   let socket: CloudflareSocket | undefined;
   try {
     socket = connect(
-      { hostname: proxy.hostname, port: Number(proxy.port) || 80 },
+      { hostname: proxy.hostname, port: Number(proxy.port) || 1080 },
       { secureTransport: "starttls" },
     ) as CloudflareSocket;
     await socket.opened;
-
-    const proxyAuth = btoa(`${decodeURIComponent(proxy.username)}:${decodeURIComponent(proxy.password)}`);
-    const proxyWriter = socket.writable.getWriter();
-    await proxyWriter.write(new TextEncoder().encode(
-      `CONNECT api.moolre.com:443 HTTP/1.1\r\nHost: api.moolre.com:443\r\nProxy-Authorization: Basic ${proxyAuth}\r\nProxy-Connection: keep-alive\r\n\r\n`,
-    ));
-    await proxyWriter.releaseLock();
-
-    const proxyReader = socket.readable.getReader();
-    const proxyHeader = await readUntilHeaderEnd(proxyReader);
-    proxyReader.releaseLock();
-    const proxyStatus = Number(proxyHeader.split("\r\n", 1)[0]?.split(" ")[1]);
-    if (proxyStatus !== 200) throw new Error(`Fixie could not open the secure Moolre tunnel (HTTP ${proxyStatus || "unknown"}).`);
+    await establishSocksTunnel(socket, "api.moolre.com", 443, proxy.username, proxy.password);
 
     const secureSocket = socket.startTls({ expectedServerHostname: "api.moolre.com" });
     socket = secureSocket;
@@ -163,7 +203,7 @@ export async function moolrePayoutRequest(
     await writer.write(new TextEncoder().encode(request));
     await writer.close();
 
-    const reader = secureSocket.readable.getReader();
+    const reader = new SocketByteReader(secureSocket.readable);
     return await readHttpResponse(reader);
   } finally {
     if (socket) await socket.close().catch(() => undefined);
