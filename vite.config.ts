@@ -14,6 +14,19 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    // Cloudflare Workers provides this runtime builtin; it is not an npm package.
+    // Keep it external so local Vite/Rollup preview builds do not try to resolve it.
+    optimizeDeps: {
+      exclude: ["cloudflare:sockets"],
+    },
+    ssr: {
+      external: ["cloudflare:sockets"],
+    },
+    build: {
+      rollupOptions: {
+        external: ["cloudflare:sockets"],
+      },
+    },
     plugins: [
       VitePWA({
         strategies: "generateSW",
