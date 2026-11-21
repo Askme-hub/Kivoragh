@@ -17,14 +17,14 @@ type MoolreReply = {
 };
 
 function payoutConfig() {
-  const proxyValue = process.env.FIXIE_SOCKS_URL;
+  const proxyValue = process.env.FIXIE_SOCKS_URL || process.env.FIXIE_SOCKS_HOST;
   const user = process.env.MOOLRE_API_USER;
   const key = process.env.MOOLRE_API_KEY;
   const account = process.env.MOOLRE_ACCOUNT_NUMBER;
   if (!proxyValue || !user || !key || !account) {
     throw new Error("Moolre seller payouts need the Fixie SOCKS URL and Moolre credentials configured.");
   }
-  const proxy = new URL(proxyValue);
+  const proxy = new URL(proxyValue.includes("://") ? proxyValue : `socks5://${proxyValue}`);
   if (!["socks5:", "socks5h:"].includes(proxy.protocol) || !proxy.hostname || !proxy.username || !proxy.password) {
     throw new Error("The Fixie SOCKS5 URL is invalid. It must use socks5:// with its username and password.");
   }
