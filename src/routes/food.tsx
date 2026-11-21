@@ -141,15 +141,12 @@ function FoodDiscoveryPage() {
         <div className="mb-3 mt-6 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-extrabold tracking-tight text-foreground md:text-2xl">
-              Food sellers near you
+              Explore food sellers
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
               {isLoading ? "Finding food sellers…" : `${visibleSellers.length} seller${visibleSellers.length === 1 ? "" : "s"}`}
             </p>
           </div>
-          <span className="hidden items-center gap-1.5 rounded-full bg-primary-soft px-3 py-2 text-xs font-semibold text-primary sm:inline-flex">
-            <MapPin size={14} /> Sefwi Wiawso
-          </span>
         </div>
 
         {isLoading ? (
