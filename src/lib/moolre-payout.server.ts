@@ -85,7 +85,12 @@ class SocketByteReader {
 async function readHttpResponse(reader: SocketByteReader) {
   const raw = new TextDecoder().decode(await reader.readToEnd());
   const splitAt = raw.indexOf("\r\n\r\n");
-  if (splitAt < 0) throw new Error("Moolre returned an incomplete HTTP response.");
+  if (splitAt < 0) {
+    const preview = raw.slice(0, 160).replace(/[^\\x20-\\x7E]/g, ".");
+    throw new Error(
+      `Moolre returned an incomplete HTTP response (received ${raw.length} bytes; response begins: "${preview || "empty"}").`,
+    );
+  }
   const header = raw.slice(0, splitAt);
   let body = raw.slice(splitAt + 4);
   const statusLine = header.split("\r\n", 1)[0] ?? "";
