@@ -304,6 +304,12 @@ export const refreshMoolreWithdrawal = createServerFn({ method: "POST" })
       return { payoutStatus: outcome };
     }
 
+    // SS07 / an unrecognized status means Moolre has no confirmed transfer record.
+    // Keep a validation-only review request cancellable; never invent a pending transfer.
+    if (req.payout_status === "needs_review" && ![0, 1, 2, 3].includes(txstatus)) {
+      return { payoutStatus: "needs_review" };
+    }
+
     await (supabaseAdmin as any).from("moolre_payout_attempts").update({
       status: "processing",
       txstatus: [0, 3].includes(txstatus) ? txstatus : attempt.txstatus,
