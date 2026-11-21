@@ -123,6 +123,7 @@ export async function saveFoodOrderDetails(
   supabaseAdmin: SupabaseClient,
   orderId: string,
   details: Awaited<ReturnType<typeof validateFoodCheckout>>,
+  actualDeliveryFee: number,
 ) {
   if (!details) return;
   const { error } = await supabaseAdmin.from("food_order_details").insert({
@@ -131,7 +132,7 @@ export async function saveFoodOrderDetails(
     fulfillment_method: details.fulfillment_method,
     requested_for: details.requested_for,
     preparation_minutes: details.preparation_minutes,
-    delivery_fee: details.delivery_fee,
+    delivery_fee: actualDeliveryFee,
   });
   if (error) throw new Error(error.message);
 }
