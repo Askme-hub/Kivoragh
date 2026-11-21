@@ -42,7 +42,7 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
       throw new Error("Automatic payouts are not ready yet. Please contact Kivora support; your wallet balance has not been reserved.");
     }
     const receiver = toLocalPhone(String(account.account_number));
-    if (!/^0\\d{9}$/.test(receiver)) throw new Error("The saved mobile money number is invalid. Update your payout account first.");
+    if (!/^0\d{9}$/.test(receiver)) throw new Error("The saved mobile money number is invalid. Update your payout account first.");
 
     const { error: escrowErr } = await supabaseAdmin.rpc("release_seller_escrow", { _seller_id: userId });
     if (escrowErr) throw new Error(escrowErr.message);
