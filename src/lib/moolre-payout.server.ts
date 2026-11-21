@@ -206,7 +206,12 @@ export async function moolrePayoutRequest(
 
     const writer = secureSocket.writable.getWriter();
     await writer.write(new TextEncoder().encode(request));
-    await writer.close();
+    // Keep the TLS write side open after sending the complete HTTP request.
+    // Closing a TLS writer here can send a close-notify that some upstreams
+    // interpret as a full connection shutdown before they return the response.
+    // Content-Length tells Moolre the request is complete; Connection: close
+    // asks the server to close after its response so readToEnd can finish.
+    writer.releaseLock();
 
     const reader = new SocketByteReader(secureSocket.readable);
     return await readHttpResponse(reader);
