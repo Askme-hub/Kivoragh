@@ -58,6 +58,26 @@ const STATUS_DESCRIPTIONS: Record<string, string> = {
   cancelled: "This order has been cancelled.",
 };
 
+const FOOD_STATUS_FLOW = ["placed", "accepted", "preparing", "ready_for_pickup", "out_for_delivery", "completed"];
+
+const FOOD_STATUS_NAMES: Record<string, string> = {
+  placed: "Order Received",
+  accepted: "Order Accepted",
+  preparing: "Preparing Your Order",
+  ready_for_pickup: "Ready for Pickup",
+  out_for_delivery: "Out for Delivery",
+  completed: "Food Order Completed",
+};
+
+const FOOD_STATUS_DESCRIPTIONS: Record<string, string> = {
+  placed: "Your food order has been received and is waiting for the seller.",
+  accepted: "The food seller has accepted your order.",
+  preparing: "The food seller is preparing your order.",
+  ready_for_pickup: "Your food order is ready. You can collect it from the seller.",
+  out_for_delivery: "Your food order is on its way to you.",
+  completed: "Your food order has been completed. Thank you for ordering with Kivora.",
+};
+
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   pending_payment: <CreditCard size={16} />,
   placed: <Package size={16} />,
@@ -87,7 +107,7 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span className={`${base} ${color}`}>
       {STATUS_ICONS[status] ?? <Circle size={14} />}
-      {STATUS_NAMES[status] ?? status}
+      {STATUS_NAMES[status] ?? FOOD_STATUS_NAMES[status] ?? status.replaceAll("_", " ")}
     </span>
   );
 }
@@ -170,7 +190,8 @@ function OrderDetails() {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 15000,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
 
   const { data: foodOrderDetails } = useQuery({
@@ -179,13 +200,14 @@ function OrderDetails() {
     queryFn: async () => {
       const { data: details, error } = await (supabase as any)
         .from("food_order_details")
-        .select("fulfillment_method, requested_for, preparation_minutes, status")
+        .select("fulfillment_method, requested_for, preparation_minutes, status, created_at, accepted_at, preparing_at, ready_at, dispatched_at, completed_at")
         .eq("order_id", id)
         .maybeSingle();
       if (error) throw error;
       return details;
     },
-    refetchInterval: 15000,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
 
   const productIds: string[] = (data?.order_items ?? []).map((i: any) => i.product_id).filter(Boolean);
@@ -221,7 +243,9 @@ function OrderDetails() {
     );
 
   const cancelled = data.status === "cancelled";
-  const currentIdx = STATUS_FLOW.indexOf(data.status);
+  const displayStatus = data.status === "cancelled" ? "cancelled" : (foodOrderDetails?.status ?? data.status);
+  const activeStatusFlow = foodOrderDetails && data.status !== "cancelled" ? FOOD_STATUS_FLOW : STATUS_FLOW;
+  const currentIdx = activeStatusFlow.indexOf(displayStatus);
   const history: { status: string; created_at: string }[] = (data.order_status_history ?? [])
     .slice()
     .sort((a: any, b: any) => +new Date(a.created_at) - +new Date(b.created_at));
@@ -241,7 +265,7 @@ function OrderDetails() {
               <p className="text-xs text-muted-foreground uppercase tracking-wide">Order Number</p>
               <p className="text-lg font-extrabold">{data.order_number}</p>
             </div>
-            <StatusBadge status={data.status} />
+            <StatusBadge status={displayStatus} />
           </div>
           <p className="text-sm text-muted-foreground">
             Placed on {new Date(data.created_at).toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
@@ -253,7 +277,7 @@ function OrderDetails() {
 
         {/* Status description banner */}
         <div className={`px-4 py-3 text-sm ${cancelled ? "bg-destructive/5 text-destructive" : "bg-primary-soft/50 text-foreground"}`}>
-          {STATUS_DESCRIPTIONS[data.status]}
+          {foodOrderDetails && data.status !== "cancelled" ? FOOD_STATUS_DESCRIPTIONS[foodOrderDetails.status] : STATUS_DESCRIPTIONS[data.status]}
         </div>
       </div>
 
@@ -280,7 +304,7 @@ function OrderDetails() {
             </div>
           ) : (
             <ol className="relative">
-              {STATUS_FLOW.map((s, i) => {
+              {activeStatusFlow.map((s, i) => {
                 const reached = i <= currentIdx;
                 const isCurrent = i === currentIdx;
                 const at = historyMap.get(s);
@@ -322,7 +346,7 @@ function OrderDetails() {
                           reached ? "text-foreground" : "text-muted-foreground"
                         }`}
                       >
-                        {STATUS_NAMES[s]}
+                        {STATUS_NAMES[s] ?? FOOD_STATUS_NAMES[s] ?? s.replaceAll("_", " ")}
                       </p>
                       {at && (
                         <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
