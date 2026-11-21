@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { moolrePayoutRequest, moolreChannelForProvider, normalizeMoolreName } from "@/lib/moolre-payout.server";
+import { toLocalPhone } from "@/lib/moolre.server";
 
 const withdrawalSchema = z.object({
   amount: z.number().positive().max(10_000_000),
@@ -31,8 +33,11 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!account) throw new Error("Select a valid saved payout account.");
 
-    const method = account.method;
-    const accountDetails = `${account.account_name} · ${account.account_number}${account.provider ? ` (${account.provider})` : ""}`;
+    if (account.method !== "Mobile Money") {
+      throw new Error("Bank payouts will be enabled in a later phase. Please select an MTN, Telecel or AT Money account.");
+    }
+    const channel = moolreChannelForProvider(account.provider);
+    if (!channel) throw new Error("This mobile money network is not supported for automatic payouts.");
 
     const { error: escrowErr } = await supabaseAdmin.rpc("release_seller_escrow", { _seller_id: userId });
     if (escrowErr) throw new Error(escrowErr.message);
@@ -53,7 +58,169 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
       throw new Error("The withdrawal request could not be created. Please try again.");
     }
 
-    return { id: requestId };
+    // Create a durable payout attempt before contacting Moolre. The unique external
+    // reference is reused for status checks and is never regenerated after uncertainty.
+    const externalref = `KIV-${requestId.replace(/-/g, "").slice(0, 24)}`;
+    const receiver = toLocalPhone(String(account.account_number));
+    const { error: attemptErr } = await (supabaseAdmin as any)
+      .from("moolre_payout_attempts")
+      .insert({
+        withdrawal_id: requestId,
+        seller_id: userId,
+        externalref,
+        channel,
+        receiver,
+        expected_name: String(account.account_name).trim(),
+        amount: Number(data.amount).toFixed(2),
+        status: "queued",
+      });
+
+    if (attemptErr) {
+      await supabaseAdmin.from("withdrawal_requests").update({
+        payout_status: "needs_review",
+        payout_provider: "moolre",
+        payout_last_error: "Payout attempt could not be recorded. No transfer was sent.",
+        payout_updated_at: new Date().toISOString(),
+      }).eq("id", requestId);
+      return { id: requestId, payoutStatus: "needs_review" as const };
+    }
+
+    const markReview = async (message: string, code?: string) => {
+      await (supabaseAdmin as any).from("moolre_payout_attempts").update({
+        status: "needs_review",
+        moolre_code: code ?? null,
+        moolre_message: message.slice(0, 500),
+        updated_at: new Date().toISOString(),
+      }).eq("externalref", externalref);
+      await supabaseAdmin.from("withdrawal_requests").update({
+        payout_status: "needs_review",
+        payout_provider: "moolre",
+        payout_last_error: message.slice(0, 500),
+        payout_updated_at: new Date().toISOString(),
+      }).eq("id", requestId);
+      return { id: requestId, payoutStatus: "needs_review" as const };
+    };
+
+    await supabaseAdmin.from("withdrawal_requests").update({
+      payout_status: "validating",
+      payout_provider: "moolre",
+      payout_updated_at: new Date().toISOString(),
+    }).eq("id", requestId);
+
+    let validation: any;
+    try {
+      validation = await moolrePayoutRequest("/open/transact/validate", {
+        type: 1, receiver, channel, currency: "GHS",
+      });
+    } catch (error) {
+      return await markReview(error instanceof Error ? error.message : "Moolre name validation could not be completed. No transfer was sent.");
+    }
+
+    const validatedName = typeof validation.data === "string" ? validation.data.trim() : "";
+    if (Number(validation.status) !== 1 || !validatedName) {
+      return await markReview(
+        typeof validation.message === "string" ? validation.message : "Moolre could not validate this mobile money account.",
+        validation.code,
+      );
+    }
+    if (normalizeMoolreName(validatedName) !== normalizeMoolreName(String(account.account_name))) {
+      await (supabaseAdmin as any).from("moolre_payout_attempts").update({
+        status: "needs_review",
+        validated_name: validatedName,
+        moolre_code: validation.code ?? null,
+        moolre_message: "Registered recipient name does not match the seller's saved payout name.",
+        updated_at: new Date().toISOString(),
+      }).eq("externalref", externalref);
+      await supabaseAdmin.from("withdrawal_requests").update({
+        payout_status: "needs_review",
+        payout_provider: "moolre",
+        payout_last_error: `Name mismatch. Moolre returned: ${validatedName}`,
+        payout_updated_at: new Date().toISOString(),
+      }).eq("id", requestId);
+      return { id: requestId, payoutStatus: "needs_review" as const };
+    }
+
+    await (supabaseAdmin as any).from("moolre_payout_attempts").update({
+      status: "processing",
+      validated_name: validatedName,
+      moolre_code: validation.code ?? null,
+      updated_at: new Date().toISOString(),
+    }).eq("externalref", externalref);
+    await supabaseAdmin.from("withdrawal_requests").update({
+      payout_status: "processing",
+      payout_provider: "moolre",
+      payout_last_error: null,
+      payout_updated_at: new Date().toISOString(),
+    }).eq("id", requestId);
+
+    let transfer: any;
+    try {
+      transfer = await moolrePayoutRequest("/open/transact/transfer", {
+        type: 1,
+        channel,
+        currency: "GHS",
+        amount: Number(data.amount).toFixed(2),
+        receiver,
+        externalref,
+        reference: `Kivora seller withdrawal`,
+        sendername: "Kivora",
+      }, externalref);
+    } catch {
+      // A timeout is ambiguous. Query this same reference; never send a second transfer.
+      try {
+        transfer = await moolrePayoutRequest("/open/transact/status", {
+          type: 1, idtype: 1, id: externalref,
+        });
+      } catch {
+        await (supabaseAdmin as any).from("moolre_payout_attempts").update({
+          status: "processing",
+          moolre_message: "Transfer response was uncertain; awaiting status confirmation.",
+          updated_at: new Date().toISOString(),
+        }).eq("externalref", externalref);
+        return { id: requestId, payoutStatus: "processing" as const };
+      }
+    }
+
+    const txstatus = Number(transfer?.data?.txstatus);
+    const transactionId = transfer?.data?.transactionid ? String(transfer.data.transactionid) : null;
+    const code = transfer?.code ? String(transfer.code) : null;
+    const message = Array.isArray(transfer?.message)
+      ? transfer.message.join(" ")
+      : String(transfer?.message ?? transfer?.data?.reason ?? "");
+
+    if (txstatus === 1 || txstatus === 2) {
+      const outcome = txstatus === 1 ? "paid" : "failed";
+      const { error: finalErr } = await (supabaseAdmin as any).rpc("finalize_moolre_seller_withdrawal", {
+        _withdrawal_id: requestId,
+        _outcome: outcome,
+        _moolre_transaction_id: transactionId,
+        _moolre_code: code,
+        _moolre_message: message,
+        _txstatus: txstatus,
+      });
+      if (finalErr) {
+        await markReview("Moolre returned a final status but the wallet ledger could not be updated. Admin reconciliation is required.", code ?? undefined);
+        throw new Error("Moolre returned a result that needs admin reconciliation. Do not request another withdrawal.");
+      }
+      return { id: requestId, payoutStatus: outcome as "paid" | "failed" };
+    }
+
+    await (supabaseAdmin as any).from("moolre_payout_attempts").update({
+      status: "processing",
+      moolre_transaction_id: transactionId,
+      moolre_code: code,
+      moolre_message: message.slice(0, 500),
+      txstatus: [0, 3].includes(txstatus) ? txstatus : null,
+      updated_at: new Date().toISOString(),
+    }).eq("externalref", externalref);
+    await supabaseAdmin.from("withdrawal_requests").update({
+      payout_status: "processing",
+      payout_provider: "moolre",
+      payout_last_error: null,
+      payout_updated_at: new Date().toISOString(),
+    }).eq("id", requestId);
+
+    return { id: requestId, payoutStatus: "processing" as const };
   });
 
 const decisionSchema = z.object({
