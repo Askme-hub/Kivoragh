@@ -38,6 +38,11 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
     }
     const channel = moolreChannelForProvider(account.provider);
     if (!channel) throw new Error("This mobile money network is not supported for automatic payouts.");
+    if (!process.env.FIXIE_SOCKS_URL || !process.env.MOOLRE_API_KEY || !process.env.MOOLRE_API_USER || !process.env.MOOLRE_ACCOUNT_NUMBER) {
+      throw new Error("Automatic payouts are not ready yet. Please contact Kivora support; your wallet balance has not been reserved.");
+    }
+    const receiver = toLocalPhone(String(account.account_number));
+    if (!/^0\\d{9}$/.test(receiver)) throw new Error("The saved mobile money number is invalid. Update your payout account first.");
 
     const { error: escrowErr } = await supabaseAdmin.rpc("release_seller_escrow", { _seller_id: userId });
     if (escrowErr) throw new Error(escrowErr.message);
@@ -61,7 +66,6 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
     // Create a durable payout attempt before contacting Moolre. The unique external
     // reference is reused for status checks and is never regenerated after uncertainty.
     const externalref = `KIV-${requestId.replace(/-/g, "").slice(0, 24)}`;
-    const receiver = toLocalPhone(String(account.account_number));
     const { error: attemptErr } = await (supabaseAdmin as any)
       .from("moolre_payout_attempts")
       .insert({
