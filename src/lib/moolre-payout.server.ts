@@ -174,7 +174,7 @@ export async function moolrePayoutRequest(
   try {
     socket = connect(
       { hostname: proxy.hostname, port: Number(proxy.port) || 1080 },
-      { secureTransport: "starttls" },
+      { secureTransport: "starttls", allowHalfOpen: true },
     ) as CloudflareSocket;
     await socket.opened;
     await establishSocksTunnel(socket, "api.moolre.com", 443, proxy.username, proxy.password);
