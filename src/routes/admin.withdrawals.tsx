@@ -29,6 +29,8 @@ function AdminWithdrawals() {
   });
 
   const act = async (id: string, status: "approved" | "rejected" | "paid") => {
+    if (status === "paid" && !confirm("Have you successfully sent the money to the seller's saved payout account? Only mark this request as paid after the transfer is complete.")) return;
+    if (status === "rejected" && !confirm("Reject this withdrawal request and return the reserved funds to the seller?")) return;
     setBusyId(id);
     try {
       await decide({ data: { id, status } });
