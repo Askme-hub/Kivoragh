@@ -1,1 +1,4 @@
 project_id = "yodxhtmnrzmyxwzoorhl"
+
+[functions.moolre-payout]
+verify_jwt = true
