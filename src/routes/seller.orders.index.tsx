@@ -7,6 +7,16 @@ import { formatGHC } from "@/lib/store";
 
 export const Route = createFileRoute("/seller/orders/")({ component: SellerOrders });
 
+const FOOD_STYLE: Record<string, string> = {
+  placed: "bg-warning-soft text-warning-ink",
+  accepted: "bg-info-soft text-info-ink",
+  preparing: "bg-info-soft text-info-ink",
+  ready_for_pickup: "bg-success-soft text-success-ink",
+  out_for_delivery: "bg-info-soft text-info-ink",
+  completed: "bg-success-soft text-success-ink",
+  cancelled: "bg-destructive/10 text-destructive",
+};
+
 const FSTYLE: Record<string, string> = {
   processing: "bg-warning-soft text-warning-ink",
   shipped: "bg-info-soft text-info-ink",
@@ -65,7 +75,11 @@ function SellerOrders() {
             </p>
             <div className="flex items-center justify-between mt-2">
               <div className="flex gap-1 flex-wrap">
-                {statuses.map((s) => (
+                {o.food_order ? (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${FOOD_STYLE[o.food_order.status] ?? ""}`}>
+                    Food · {o.food_order.status.replaceAll("_", " ")}
+                  </span>
+                ) : statuses.map((s) => (
                   <span key={s} className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${FSTYLE[s] ?? ""}`}>{s}</span>
                 ))}
               </div>

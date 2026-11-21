@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Printer, Truck, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
-import { getSellerOrder, updateItemFulfillment } from "@/lib/seller-orders.functions";
+import { getSellerOrder, updateItemFulfillment, updateFoodOrderStatus } from "@/lib/seller-orders.functions";
 import { formatGHC } from "@/lib/store";
 
 export const Route = createFileRoute("/seller/orders/$id")({ component: SellerOrderDetail });
@@ -27,6 +27,8 @@ function SellerOrderDetail() {
   const qc = useQueryClient();
   const fetchOrder = useServerFn(getSellerOrder);
   const updateFn = useServerFn(updateItemFulfillment);
+  const updateFoodFn = useServerFn(updateFoodOrderStatus);
+  const [foodBusy, setFoodBusy] = useState(false);
 
   const [rider, setRider] = useState({ name: "", phone: "", note: "" });
   const { data: order, isLoading } = useQuery({
@@ -100,6 +102,52 @@ function SellerOrderDetail() {
             <Row label="Prep time" value={`${order.food_order.preparation_minutes} minutes`} />
             <Row label="Food status" value={order.food_order.status.replaceAll("_", " ")} />
           </dl>
+          <div className="mt-4 border-t border-border pt-3">
+            {(() => {
+              const status = order.food_order.status;
+              const next = status === "placed" ? "accepted"
+                : status === "accepted" ? "preparing"
+                : status === "preparing"
+                  ? (order.food_order.fulfillment_method === "pickup" ? "ready_for_pickup" : "out_for_delivery")
+                  : (status === "ready_for_pickup" || status === "out_for_delivery") ? "completed" : null;
+              const labels: Record<string, string> = {
+                accepted: "Accept food order",
+                preparing: "Start preparing",
+                ready_for_pickup: "Mark ready for pickup",
+                out_for_delivery: "Mark out for delivery",
+                completed: "Mark completed",
+              };
+              return next ? (
+                <button
+                  type="button"
+                  disabled={foodBusy || order.status === "cancelled"}
+                  onClick={async () => {
+                    setFoodBusy(true);
+                    try {
+                      await updateFoodFn({ data: { orderId: order.id, status: next as "accepted" | "preparing" | "ready_for_pickup" | "out_for_delivery" | "completed" } });
+                      toast.success("Food order updated");
+                      qc.invalidateQueries({ queryKey: ["seller-order", id] });
+                      qc.invalidateQueries({ queryKey: ["seller-orders"] });
+                    } catch (e: any) {
+                      toast.error(e.message ?? "Could not update food order");
+                    } finally {
+                      setFoodBusy(false);
+                    }
+                  }}
+                  className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                >
+                  {foodBusy ? "Updating…" : labels[next]}
+                </button>
+              ) : (
+                <p className="rounded-lg bg-success/10 px-3 py-2 text-sm font-semibold text-success-ink">
+                  {status === "completed" ? "Food order completed" : "This food order is no longer active"}
+                </p>
+              );
+            })()}
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Update each step as you accept, prepare and fulfil the customer’s order.
+            </p>
+          </div>
         </div>
       )}
 
@@ -153,7 +201,9 @@ function SellerOrderDetail() {
         </div>
       </div>
 
-      {/* Fulfillment — forward only; shipped/delivered cannot be undone by seller */}
+      {!order.food_order && (
+      <>
+      {/* Ordinary marketplace fulfillment — food orders use the food-specific workflow above */}
       <div className="bg-card border border-border rounded-xl p-4 print:hidden">
         <h2 className="font-bold text-sm mb-1">Fulfillment status</h2>
         <p className="mb-3 text-[11px] text-muted-foreground">
@@ -241,6 +291,8 @@ function SellerOrderDetail() {
           </>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }
