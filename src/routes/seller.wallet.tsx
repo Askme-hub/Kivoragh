@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Wallet, ArrowDownToLine, Clock, TrendingUp, Plus, Trash2, Check, CreditCard } from "lucide-react";
+import { Wallet, ArrowDownToLine, Clock, TrendingUp, Plus, Trash2, CreditCard, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { formatGHC } from "@/lib/store";
@@ -35,6 +35,7 @@ function SellerWallet() {
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
+  const [showBalance, setShowBalance] = useState(true);
 
   // Add-account form
   const [showForm, setShowForm] = useState(false);
@@ -140,10 +141,7 @@ function SellerWallet() {
     setBusy(true);
     try {
       const result = await submit({ data: { amount: amt, payout_account_id: selectedAccount } });
-      if (result.payoutStatus === "paid") toast.success("Moolre payout completed successfully");
-      else if (result.payoutStatus === "failed") toast.error("Moolre could not complete the payout. The reserved funds have been returned.");
-      else if (result.payoutStatus === "needs_review") toast.warning("Withdrawal reserved for admin review. No second payout will be sent.");
-      else toast.success("Withdrawal submitted. Moolre is processing the payout.");
+      toast.success("Withdrawal request submitted", { description: "Your funds are reserved safely. Kivora will review and process your payout." });
       setAmount("");
       qc.invalidateQueries({ queryKey: ["seller-wallet", user.id] });
       qc.invalidateQueries({ queryKey: ["seller-withdrawals", user.id] });
@@ -161,10 +159,10 @@ function SellerWallet() {
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Seller finances</p>
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">My wallet</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Your earnings, payouts and money activity in one place.</p>
+          <p className="mt-1 text-sm text-muted-foreground">A clear view of your earnings, available funds and payout activity.</p>
         </div>
         <div className="flex items-center gap-2 self-start rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground sm:self-auto">
-          <span className="h-2 w-2 rounded-full bg-success" /> Secure seller wallet
+          <ShieldCheck size={14} className="text-success" /> Protected seller wallet
         </div>
       </header>
 
@@ -181,8 +179,8 @@ function SellerWallet() {
         <div className="relative grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
           <div>
             <p className="flex items-center gap-2 text-sm font-semibold text-primary-foreground/80"><Wallet size={17} /> Available to withdraw</p>
-            <p className="mt-2 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">{formatGHC(balance)}</p>
-            <p className="mt-2 max-w-md text-xs leading-relaxed text-primary-foreground/75">Only cleared funds are available for withdrawal. Recent sales may remain in escrow for 48 hours.</p>
+            <p className="mt-2 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">{showBalance ? formatGHC(balance) : "GHS ••••••"}</p>
+            <p className="mt-2 max-w-md text-xs leading-relaxed text-primary-foreground/75">Cleared earnings are ready to request. Recent sales may remain in the 48-hour security escrow before becoming available.</p>
           </div>
           <button
             type="button"
@@ -209,7 +207,7 @@ function SellerWallet() {
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary"><CreditCard size={19} /></span>
               <div>
                 <h2 className="text-sm font-bold">Payout accounts</h2>
-                <p className="text-xs text-muted-foreground">Where Kivora sends your withdrawals</p>
+                <p className="text-xs text-muted-foreground">Your saved Mobile Money and bank destinations</p>
               </div>
             </div>
             <button
@@ -328,13 +326,13 @@ function SellerWallet() {
             <form onSubmit={handleSubmit} className="mt-4 space-y-3">
               <div className="rounded-xl bg-muted/50 p-3">
                 <p className="text-xs font-semibold text-muted-foreground">Available balance</p>
-                <p className="mt-1 text-xl font-extrabold">{formatGHC(balance)}</p>
+                <p className="mt-1 text-xl font-extrabold">{showBalance ? formatGHC(balance) : "GHS ••••••"}</p>
               </div>
               <label className="block space-y-1.5 text-xs font-semibold text-muted-foreground">
                 Withdrawal amount (GHS)
                 <input type="number" min="1" max={balance} step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-12 w-full rounded-xl border border-border bg-background px-3 text-lg font-bold text-foreground outline-none focus:border-primary" placeholder="0.00" />
               </label>
-              <p className="text-xs leading-relaxed text-muted-foreground">Your request is sent to Moolre after the registered account name is verified. You can track its status below.</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">After you submit, Kivora reviews your request and processes the payment to your selected account. You can follow every status update below.</p>
               <button type="submit" disabled={busy || balance <= 0 || !selectedAccount} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
                 {busy ? "Submitting request…" : "Request withdrawal"}
               </button>
@@ -346,7 +344,7 @@ function SellerWallet() {
       <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="border-b border-border px-4 py-4 sm:px-5">
           <h2 className="text-sm font-bold">Withdrawal requests</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">Follow the progress of your payout requests.</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Every request has a clear status and payment record.</p>
         </div>
         {requests?.length ? (
           <div className="divide-y divide-border">
@@ -373,7 +371,7 @@ function SellerWallet() {
       <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="border-b border-border px-4 py-4 sm:px-5">
           <h2 className="text-sm font-bold">Transaction history</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">Your latest wallet activity, newest first.</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">A transparent record of every wallet credit and debit.</p>
         </div>
         {txns?.length ? (
           <div className="divide-y divide-border">
