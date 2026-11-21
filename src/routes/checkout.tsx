@@ -1,6 +1,7 @@
 import { ClientOnly, createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import {
   ChevronRight,
@@ -86,6 +87,9 @@ function NetworkLogo({ network }: { network: MomoNet }) {
     </span>
   );
 }
+function toLocalDateTimeInput(date: Date) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
 function guessNet(phone: string): MomoNet {
   const d = phone.replace(/\D/g, "").replace(/^233/, "0");
   const p = d.slice(0, 3);
@@ -164,6 +168,8 @@ function Checkout() {
   const [mobileStep, setMobileStep] = useState<"delivery" | "payment">("delivery");
   const [paymentChoicesOpen, setPaymentChoicesOpen] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<"online" | "cod">("cod");
+  const [foodTiming, setFoodTiming] = useState<"now" | "scheduled">("now");
+  const [foodScheduleLocal, setFoodScheduleLocal] = useState("");
 
   const [form, setForm] = useState({
     label: "Home",
@@ -206,6 +212,23 @@ function Checkout() {
     [cart],
   );
   const { data: sellerDelivery = [] } = useSellerDelivery(sellerIds);
+  const { data: publicFoodSellers = [] } = useQuery({
+    queryKey: ["public-food-sellers-checkout"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("public_food_sellers");
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        user_id: string; shop_name: string; accepting_orders: boolean; is_open_now: boolean;
+        default_preparation_minutes: number; scheduled_orders_enabled: boolean;
+      }>;
+    },
+    staleTime: 60_000,
+  });
+  const cartSellerIds = [...new Set(sellerIds)];
+  const foodSellerIdsInCart = cartSellerIds.filter((id) => publicFoodSellers.some((seller) => seller.user_id === id));
+  const foodSeller = publicFoodSellers.find((seller) => foodSellerIdsInCart.includes(seller.user_id));
+  const isFoodOrder = foodSellerIdsInCart.length > 0;
+  const foodCartMixedSeller = isFoodOrder && (cartSellerIds.length !== 1 || cartSellerIds[0] !== foodSeller?.user_id);
 
   // Pickup stations offered by the sellers in this cart
   const stations = useMemo(
@@ -353,7 +376,15 @@ function Checkout() {
     if (!codAllowed && paymentMethod === "cod") setPaymentMethod("online");
   }, [codAllowed, paymentMethod]);
 
-  const blocker = !selected
+  const foodBlocker = !isFoodOrder ? null
+    : foodCartMixedSeller ? "Food orders must contain items from one food seller only. Remove products from other shops and place a separate order."
+    : !foodSeller?.accepting_orders ? "This food seller is not accepting orders right now."
+    : foodTiming === "now" && !foodSeller.is_open_now ? "This food seller is outside opening hours. Choose a scheduled time if available."
+    : foodTiming === "scheduled" && !foodSeller.scheduled_orders_enabled ? "This food seller does not accept scheduled orders."
+    : foodTiming === "scheduled" && !foodScheduleLocal ? "Choose a date and time for your food order."
+    : null;
+
+  const blocker = foodBlocker ?? (!selected
     ? "Add a delivery address to continue"
     : deliveryType === "pickup" && !pickupStation
       ? "Choose a pickup station to continue"
@@ -363,9 +394,13 @@ function Checkout() {
         ? `Pay on Delivery is only for shops in ${selectedRegion}`
         : cart.length === 0
           ? "Your cart is empty"
-          : null;
+          : null);
 
   const pay = async () => {
+    if (foodBlocker) {
+      toast.error(foodBlocker);
+      return;
+    }
     if (!selected) {
       toast.error("Add a delivery address");
       setShowForm(true);
@@ -392,6 +427,9 @@ function Checkout() {
       delivery_type: deliveryType,
       pickup_station: deliveryType === "pickup" ? pickupStation : "",
     };
+    const foodOrderPayload = isFoodOrder
+      ? { scheduled_for: foodTiming === "scheduled" ? new Date(foodScheduleLocal).toISOString() : null }
+      : undefined;
     const itemsPayload = cart.map((c) => ({
       product_id: c.product.id,
       name: c.product.name,
@@ -409,6 +447,7 @@ function Checkout() {
             coupon_code: appliedCoupon?.code,
             use_store_credit: useStoreCredit,
             store_credit_amount: appliedStoreCredit,
+            food_order: foodOrderPayload,
           },
         });
         clearCart();
@@ -417,7 +456,7 @@ function Checkout() {
         return;
       }
       const res = await startMomo({
-        data: { delivery: deliveryPayload, items: itemsPayload, coupon_code: appliedCoupon?.code, use_store_credit: useStoreCredit, store_credit_amount: appliedStoreCredit, channel: momoNet, payer: momoPhone },
+        data: { delivery: deliveryPayload, items: itemsPayload, coupon_code: appliedCoupon?.code, use_store_credit: useStoreCredit, store_credit_amount: appliedStoreCredit, food_order: foodOrderPayload, channel: momoNet, payer: momoPhone },
       });
       if (res.next === "paid") {
         clearCart();
@@ -690,6 +729,31 @@ function Checkout() {
                 )}
               </div>
             </section>
+
+            {isFoodOrder && foodSeller && (
+              <section className="overflow-hidden rounded-2xl border border-primary/20 bg-card shadow-sm">
+                <div className="flex items-center gap-3 border-b border-border px-4 py-3.5 md:px-5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10"><Clock3 size={18} className="text-primary" /></div>
+                  <div><h2 className="text-sm font-semibold">Food order timing</h2><p className="text-xs text-muted-foreground">{foodSeller.shop_name} · {foodSeller.default_preparation_minutes} min preparation</p></div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 p-4">
+                  <button type="button" aria-pressed={foodTiming === "now"} onClick={() => setFoodTiming("now")} className={cn("rounded-xl border-2 p-3 text-left", foodTiming === "now" ? "border-primary bg-primary/5" : "border-border")}>
+                    <span className="block text-sm font-semibold">Order now</span><span className="mt-1 block text-xs text-muted-foreground">{foodSeller.is_open_now ? "Prepare as soon as possible" : "Currently outside opening hours"}</span>
+                  </button>
+                  <button type="button" disabled={!foodSeller.scheduled_orders_enabled} aria-pressed={foodTiming === "scheduled"} onClick={() => { setFoodTiming("scheduled"); if (!foodScheduleLocal) setFoodScheduleLocal(toLocalDateTimeInput(new Date(Date.now() + (foodSeller.default_preparation_minutes + 30) * 60_000))); }} className={cn("rounded-xl border-2 p-3 text-left disabled:opacity-50", foodTiming === "scheduled" ? "border-primary bg-primary/5" : "border-border")}>
+                    <span className="block text-sm font-semibold">Schedule for later</span><span className="mt-1 block text-xs text-muted-foreground">{foodSeller.scheduled_orders_enabled ? "Choose a collection or delivery time" : "Not available from this seller"}</span>
+                  </button>
+                </div>
+                {foodTiming === "scheduled" && (
+                  <div className="px-4 pb-4">
+                    <Label htmlFor="food-schedule" className="text-xs">Preferred date and time</Label>
+                    <Input id="food-schedule" type="datetime-local" value={foodScheduleLocal} min={toLocalDateTimeInput(new Date(Date.now() + foodSeller.default_preparation_minutes * 60_000))} onChange={(event) => setFoodScheduleLocal(event.target.value)} className="mt-1 h-11" />
+                    <p className="mt-1 text-[11px] text-muted-foreground">Choose a time during the seller's opening hours. The seller will confirm and prepare your order.</p>
+                  </div>
+                )}
+                {foodCartMixedSeller && <p className="px-4 pb-4 text-xs font-semibold text-destructive">Food orders must be placed with one food seller at a time. Remove items from other shops.</p>}
+              </section>
+            )}
 
             {/* ---- Delivery Address ---- */}
             <section
