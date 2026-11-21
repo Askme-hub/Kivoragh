@@ -146,6 +146,81 @@ export const getSellerOrder = createServerFn({ method: "GET" })
     return list[0] ?? null;
   });
 
+
+/**
+ * Food order progress is intentionally separate from the marketplace order/payment
+ * status. The seller can only advance an order belonging to their own food shop.
+ */
+export const updateFoodOrderStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ orderId: z.string().uuid(), status: z.enum([
+      "accepted", "preparing", "ready_for_pickup", "out_for_delivery", "completed"
+    ]) }).parse(input)
+  )
+  .handler(async ({ context, data }) => {
+    const { userId } = context;
+
+    const { data: foodOrder, error: foodError } = await supabaseAdmin
+      .from("food_order_details")
+      .select("order_id,seller_id,fulfillment_method,status")
+      .eq("order_id", data.orderId)
+      .eq("seller_id", userId)
+      .maybeSingle();
+    if (foodError) throw new Error(foodError.message);
+    if (!foodOrder) throw new Error("Food order not found for this seller.");
+
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .select("status,payment_status,payment_method")
+      .eq("id", data.orderId)
+      .maybeSingle();
+    if (orderError) throw new Error(orderError.message);
+    if (!order || order.status === "cancelled") throw new Error("This order is cancelled and cannot be updated.");
+
+    if (order.payment_method !== "cod" && order.payment_status !== "paid") {
+      throw new Error("This online order has not been confirmed as paid yet.");
+    }
+
+    const current = String(foodOrder.status);
+    const nextByCurrent: Record<string, string> = {
+      placed: "accepted",
+      accepted: "preparing",
+      preparing: foodOrder.fulfillment_method === "pickup" ? "ready_for_pickup" : "out_for_delivery",
+      ready_for_pickup: "completed",
+      out_for_delivery: "completed",
+    };
+    if (nextByCurrent[current] !== data.status) {
+      throw new Error("This food order cannot move from " + current.replaceAll("_", " ") +
+        " to " + data.status.replaceAll("_", " ") + ". Refresh the page and try the next available step.");
+    }
+
+    const timestampColumn: Record<string, string> = {
+      accepted: "accepted_at",
+      preparing: "preparing_at",
+      ready_for_pickup: "ready_at",
+      out_for_delivery: "dispatched_at",
+      completed: "completed_at",
+    };
+    const update: Record<string, string> = {
+      status: data.status,
+      [timestampColumn[data.status]]: new Date().toISOString(),
+    };
+    const { data: changed, error: updateError } = await supabaseAdmin
+      .from("food_order_details")
+      .update(update)
+      .eq("order_id", data.orderId)
+      .eq("seller_id", userId)
+      .eq("status", current)
+      .select("status")
+      .maybeSingle();
+
+    if (updateError) throw new Error(updateError.message);
+    if (!changed) throw new Error("The order was updated elsewhere. Refresh to see its latest status.");
+
+    return { ok: true, status: changed.status };
+  });
+
 export const updateItemFulfillment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
