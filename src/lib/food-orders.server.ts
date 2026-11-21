@@ -79,10 +79,11 @@ export async function validateFoodCheckout(
 
   const { data: seller, error: sellerError } = await supabaseAdmin
     .from("seller_profiles")
-    .select("door_delivery_fee,pickup_enabled,pickup_station,pickup_region,pickup_fee")
+    .select("status,door_delivery_fee,pickup_enabled,pickup_station,pickup_region,pickup_fee")
     .eq("user_id", settings.seller_id)
     .maybeSingle();
   if (sellerError) throw new Error(sellerError.message);
+  if (!seller || seller.status !== "approved") throw new Error("This food seller is not approved to receive orders.");
 
   if (delivery.delivery_type === "pickup" && (!seller?.pickup_enabled || !seller?.pickup_station)) {
     throw new Error("This food seller does not currently offer pickup. Please choose door delivery.");
