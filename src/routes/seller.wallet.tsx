@@ -178,7 +178,7 @@ function SellerWallet() {
         <div className="pointer-events-none absolute -bottom-24 right-28 h-44 w-44 rounded-full bg-primary-foreground/10" />
         <div className="relative grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
           <div>
-            <p className="flex items-center gap-2 text-sm font-semibold text-primary-foreground/80"><Wallet size={17} /> Available to withdraw</p>
+            <div className="flex items-center gap-2 text-sm font-semibold text-primary-foreground/80"><Wallet size={17} /> Available to withdraw <button type="button" onClick={() => setShowBalance((v) => !v)} aria-label={showBalance ? "Hide balance" : "Show balance"} className="rounded-md p-1.5 transition hover:bg-white/10">{showBalance ? <EyeOff size={15} /> : <Eye size={15} />}</button></div>
             <p className="mt-2 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">{showBalance ? formatGHC(balance) : "GHS ••••••"}</p>
             <p className="mt-2 max-w-md text-xs leading-relaxed text-primary-foreground/75">Cleared earnings are ready to request. Recent sales may remain in the 48-hour security escrow before becoming available.</p>
           </div>
@@ -198,6 +198,21 @@ function SellerWallet() {
         <StatCard label="Withdrawal pending" value={formatGHC(Number(wallet?.pending ?? 0))} icon={Clock} color="text-warning-ink" />
         <StatCard label="Total earned" value={formatGHC(Number(wallet?.total_earned ?? 0))} icon={TrendingUp} color="text-primary" />
         <StatCard label="Total withdrawn" value={formatGHC(Number(wallet?.total_withdrawn ?? 0))} icon={ArrowDownToLine} color="text-muted-foreground" />
+      </section>
+
+      <section className="grid gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm sm:grid-cols-3 sm:p-5">
+        <div className="flex items-start gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><ShieldCheck size={17} /></span>
+          <div><p className="text-sm font-bold">1. Submit securely</p><p className="mt-1 text-xs leading-relaxed text-muted-foreground">Your requested amount is reserved from your available balance.</p></div>
+        </div>
+        <div className="flex items-start gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-info/10 text-info-ink"><Clock size={17} /></span>
+          <div><p className="text-sm font-bold">2. Kivora reviews</p><p className="mt-1 text-xs leading-relaxed text-muted-foreground">Our team checks the request and arranges the payout to your saved account.</p></div>
+        </div>
+        <div className="flex items-start gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-success/10 text-success-ink"><ArrowDownToLine size={17} /></span>
+          <div><p className="text-sm font-bold">3. Track completion</p><p className="mt-1 text-xs leading-relaxed text-muted-foreground">Your wallet history updates when the payout is marked as paid.</p></div>
+        </div>
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] xl:items-start">
