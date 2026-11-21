@@ -218,6 +218,55 @@ export const updateFoodOrderStatus = createServerFn({ method: "POST" })
     if (updateError) throw new Error(updateError.message);
     if (!changed) throw new Error("The order was updated elsewhere. Refresh to see its latest status.");
 
+    // Notify the buyer in Kivora's notification bell and inbox for every food-status change.
+    const { data: buyerOrder, error: buyerOrderError } = await supabaseAdmin
+      .from("orders")
+      .select("user_id, order_number")
+      .eq("id", data.orderId)
+      .single();
+    if (buyerOrderError) throw new Error(buyerOrderError.message);
+
+    const { data: shop } = await supabaseAdmin
+      .from("seller_profiles")
+      .select("shop_name")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const shopName = shop?.shop_name || "the food seller";
+    const statusLabels: Record<string, string> = {
+      accepted: "accepted your order",
+      preparing: "started preparing your order",
+      ready_for_pickup: "your order is ready for pickup",
+      out_for_delivery: "your order is out for delivery",
+      completed: "your order has been completed",
+    };
+    const statusMessage = statusLabels[changed.status] || "updated your order";
+    const title = `Food order #${buyerOrder.order_number}: ${changed.status.replaceAll("_", " ")}`;
+    const body = `${shopName} ${statusMessage}. Open Kivora to view the latest progress.`;
+    const link = `/orders/${data.orderId}`;
+
+    const { error: notificationError } = await supabaseAdmin.from("notifications").insert({
+      user_id: buyerOrder.user_id,
+      type: "food_order_status",
+      title,
+      body,
+      link,
+    });
+    if (notificationError) console.warn("Food order notification insert failed:", notificationError);
+
+    const { error: inboxError } = await supabaseAdmin.from("inbox_messages").insert({
+      user_id: buyerOrder.user_id,
+      title,
+      body,
+    });
+    if (inboxError) console.warn("Food order inbox message insert failed:", inboxError);
+
+    try {
+      const { flushPushNotifications } = await import("./push.server");
+      await flushPushNotifications([buyerOrder.user_id]);
+    } catch (pushError) {
+      console.warn("Food order push notification failed:", pushError);
+    }
+
     return { ok: true, status: changed.status };
   });
 
