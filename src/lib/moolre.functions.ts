@@ -41,6 +41,7 @@ export const startMoolrePayment = createServerFn({ method: "POST" })
     coupon_code: z.string().trim().max(50).optional(),
     use_store_credit: z.boolean().optional().default(false),
     store_credit_amount: z.number().min(0).max(1000000000).optional(),
+    food_order: z.object({ scheduled_for: z.string().datetime().nullable().optional() }).optional(),
     channel: Channel,
     payer: Payer,
   }).parse(input))
