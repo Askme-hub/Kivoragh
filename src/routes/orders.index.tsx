@@ -17,6 +17,11 @@ const statusLabel: Record<string, { text: string; tone: string }> = {
   shipped: { text: "SHIPPED", tone: "bg-info-soft text-info-ink" },
   available_for_pickup: { text: "READY FOR PICKUP", tone: "bg-info-soft text-info-ink" },
   delivered: { text: "DELIVERED", tone: "bg-success-soft text-success-ink" },
+  accepted: { text: "ACCEPTED", tone: "bg-info-soft text-info-ink" },
+  preparing: { text: "PREPARING", tone: "bg-info-soft text-info-ink" },
+  ready_for_pickup: { text: "READY FOR PICKUP", tone: "bg-info-soft text-info-ink" },
+  out_for_delivery: { text: "OUT FOR DELIVERY", tone: "bg-info-soft text-info-ink" },
+  completed: { text: "COMPLETED", tone: "bg-success-soft text-success-ink" },
   cancelled: { text: "CANCELLED", tone: "bg-danger-soft text-danger-ink" },
 };
 
@@ -31,8 +36,26 @@ function Orders() {
         .select("id, order_number, status, total, item_count, created_at, order_items(name, image_url)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      const orders = data ?? [];
+      const orderIds = orders.map((order) => order.id);
+      if (orderIds.length === 0) return [];
+      const { data: foodRows, error: foodError } = await (supabase as any)
+        .from("food_order_details")
+        .select("order_id, status")
+        .in("order_id", orderIds);
+      if (foodError) throw foodError;
+      const foodStatusByOrder = new Map(
+        (foodRows ?? []).map((row: { order_id: string; status: string }) => [row.order_id, row.status])
+      );
+      return orders.map((order) => ({
+        ...order,
+        display_status: order.status === "cancelled"
+          ? "cancelled"
+          : (foodStatusByOrder.get(order.id) ?? order.status),
+      }));
     },
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
 
   const filtered = (data ?? []).filter((o) =>
@@ -64,7 +87,7 @@ function Orders() {
       ) : (
         filtered.map((o) => {
           const first = o.order_items?.[0];
-          const lab = statusLabel[o.status] ?? statusLabel.placed;
+          const lab = statusLabel[o.display_status] ?? statusLabel.placed;
           return (
             <Link
               key={o.id}
