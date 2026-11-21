@@ -87,7 +87,7 @@ function Orders() {
       ) : (
         filtered.map((o) => {
           const first = o.order_items?.[0];
-          const lab = statusLabel[o.display_status] ?? statusLabel.placed;
+          const lab = statusLabel[String(o.display_status)] ?? statusLabel.placed;
           return (
             <Link
               key={o.id}

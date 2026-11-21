@@ -202,10 +202,10 @@ export const updateFoodOrderStatus = createServerFn({ method: "POST" })
       out_for_delivery: "dispatched_at",
       completed: "completed_at",
     };
-    const update: Record<string, string> = {
+    const update = {
       status: data.status,
       [timestampColumn[data.status]]: new Date().toISOString(),
-    };
+    } as never;
     const { data: changed, error: updateError } = await supabaseAdmin
       .from("food_order_details")
       .update(update)
