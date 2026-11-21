@@ -140,7 +140,7 @@ function SellerWallet() {
     if (!selectedAccount) return toast.error("Select a saved payout account");
     setBusy(true);
     try {
-      const result = await submit({ data: { amount: amt, payout_account_id: selectedAccount } });
+      await submit({ data: { amount: amt, payout_account_id: selectedAccount } });
       toast.success("Withdrawal request submitted", { description: "Your funds are reserved safely. Kivora will review and process your payout." });
       setAmount("");
       qc.invalidateQueries({ queryKey: ["seller-wallet", user.id] });
