@@ -177,7 +177,7 @@ if (total <= 0) throw new Error("Invalid cart total");
     }
 
     try {
-      await saveFoodOrderDetails(supabaseAdmin, order.id, foodOrderDetails);
+      await saveFoodOrderDetails(supabaseAdmin, order.id, foodOrderDetails, shipping);
     } catch (foodError: any) {
       await supabaseAdmin.from("orders").delete().eq("id", order.id);
       throw new Error(foodError?.message ?? "Could not save food order details");
