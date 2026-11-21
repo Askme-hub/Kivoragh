@@ -86,6 +86,11 @@ export const decideWithdrawal = createServerFn({ method: "POST" })
     if (req.status === "paid" || req.status === "rejected") {
       throw new Error("This request has already been finalized.");
     }
+    // New Moolre-queued requests must only be finalized by verified Moolre status.
+    // This prevents an admin action from refunding or marking funds paid while a transfer is in flight.
+    if (req.payout_status && req.payout_status !== "not_started") {
+      throw new Error("This withdrawal is in the Moolre payout queue and cannot be changed manually.");
+    }
 
     const { data: wallet } = await supabaseAdmin
       .from("seller_wallets")
