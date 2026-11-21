@@ -139,8 +139,11 @@ function SellerWallet() {
     if (!selectedAccount) return toast.error("Select a saved payout account");
     setBusy(true);
     try {
-      await submit({ data: { amount: amt, payout_account_id: selectedAccount } });
-      toast.success("Withdrawal request submitted");
+      const result = await submit({ data: { amount: amt, payout_account_id: selectedAccount } });
+      if (result.payoutStatus === "paid") toast.success("Moolre payout completed successfully");
+      else if (result.payoutStatus === "failed") toast.error("Moolre could not complete the payout. The reserved funds have been returned.");
+      else if (result.payoutStatus === "needs_review") toast.warning("Withdrawal reserved for admin review. No second payout will be sent.");
+      else toast.success("Withdrawal submitted. Moolre is processing the payout.");
       setAmount("");
       qc.invalidateQueries({ queryKey: ["seller-wallet", user.id] });
       qc.invalidateQueries({ queryKey: ["seller-withdrawals", user.id] });
@@ -352,6 +355,12 @@ function SellerWallet() {
                 <div className="min-w-0">
                   <p className="font-bold">{formatGHC(Number(r.amount))}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{r.method} · {new Date(r.created_at).toLocaleDateString()}</p>
+                  {r.payout_provider === "moolre" && r.payout_status && r.payout_status !== "not_started" && (
+                    <p className="mt-1 text-xs font-semibold text-primary">
+                      Moolre payout: {String(r.payout_status).replaceAll("_", " ")}
+                    </p>
+                  )}
+                  {r.payout_last_error && <p className="mt-1 text-xs text-destructive">{r.payout_last_error}</p>}
                   {r.admin_note && <p className="mt-1 text-xs text-muted-foreground">Note: {r.admin_note}</p>}
                 </div>
                 <StatusBadge status={r.status} />
