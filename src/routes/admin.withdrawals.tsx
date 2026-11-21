@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowDownToLine } from "lucide-react";
 import { formatGHC } from "@/lib/store";
-import { getAllWithdrawals, decideWithdrawal, refreshMoolreWithdrawal, cancelUnsubmittedMoolreWithdrawal } from "@/lib/wallet.functions";
+import { getAllWithdrawals, decideWithdrawal, refreshMoolreWithdrawal, cancelUnsubmittedMoolreWithdrawal, testMoolrePayoutConnection } from "@/lib/wallet.functions";
 
 export const Route = createFileRoute("/admin/withdrawals")({
   component: AdminWithdrawals,
@@ -20,6 +20,7 @@ function AdminWithdrawals() {
   const decide = useServerFn(decideWithdrawal);
   const refreshPayout = useServerFn(refreshMoolreWithdrawal);
   const cancelPayout = useServerFn(cancelUnsubmittedMoolreWithdrawal);
+  const testPayoutConnection = useServerFn(testMoolrePayoutConnection);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("pending");
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -54,6 +55,20 @@ function AdminWithdrawals() {
     }
   };
 
+  const testMoolreConnection = async () => {
+    setBusyId("connection-test");
+    try {
+      const result = await testPayoutConnection();
+      toast.success("Connected to Moolre. Read-only status check completed.", {
+        description: `${result.code}: ${result.message}`,
+      });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Moolre connection test failed");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const cancelMoolre = async (id: string) => {
     if (!confirm("Cancel this payout and return the reserved money to the seller? This is allowed only when no transfer was submitted to Moolre.")) return;
     setBusyId(id);
@@ -72,9 +87,18 @@ function AdminWithdrawals() {
 
   return (
     <div className="p-4 space-y-4">
-      <h1 className="font-bold text-lg flex items-center gap-2">
-        <ArrowDownToLine size={20} /> Withdrawal Requests
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-bold text-lg flex items-center gap-2">
+          <ArrowDownToLine size={20} /> Withdrawal Requests
+        </h1>
+        <button
+          onClick={testMoolreConnection}
+          disabled={busyId !== null}
+          className="rounded-md border border-border bg-background px-3 py-2 text-xs font-semibold disabled:opacity-60"
+        >
+          {busyId === "connection-test" ? "Testing connection…" : "Test Moolre connection"}
+        </button>
+      </div>
 
       <div className="flex gap-2 overflow-x-auto">
         {FILTERS.map((f) => (
