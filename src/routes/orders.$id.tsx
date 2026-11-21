@@ -58,8 +58,6 @@ const STATUS_DESCRIPTIONS: Record<string, string> = {
   cancelled: "This order has been cancelled.",
 };
 
-const FOOD_STATUS_FLOW = ["placed", "accepted", "preparing", "ready_for_pickup", "out_for_delivery", "completed"];
-
 const FOOD_STATUS_NAMES: Record<string, string> = {
   placed: "Order Received",
   accepted: "Order Accepted",
@@ -87,10 +85,11 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
   available_for_pickup: <Store size={16} />,
   delivered: <Home size={16} />,
   cancelled: <Ban size={16} />,
+  completed: <CheckCircle2 size={16} />,
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const isSuccess = status === "delivered";
+  const isSuccess = status === "delivered" || status === "completed";
   const isWarning = status === "pending_payment" || status === "pending_confirmation";
   const isDanger = status === "cancelled";
   const isInfo = !isSuccess && !isWarning && !isDanger;
