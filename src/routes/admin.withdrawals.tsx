@@ -84,7 +84,12 @@ function AdminWithdrawals() {
                 {r.shop_phone && <p>Phone: {r.shop_phone}</p>}
                 {r.admin_note && <p>Note: {r.admin_note}</p>}
               </div>
-              {(r.status === "pending" || r.status === "approved") && (
+              {r.payout_status && r.payout_status !== "not_started" ? (
+                <div className="mt-3 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+                  Moolre payout: <span className="font-semibold capitalize">{String(r.payout_status).replaceAll("_", " ")}</span>
+                  <p className="mt-1">This request is reserved for automated payout processing. Manual paid/reject actions are locked until Moolre confirms the outcome.</p>
+                </div>
+              ) : (r.status === "pending" || r.status === "approved") ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {r.status === "pending" && (
                     <button
@@ -110,7 +115,7 @@ function AdminWithdrawals() {
                     Reject
                   </button>
                 </div>
-              )}
+              ) : null}
             </div>
           ))}
         </div>
