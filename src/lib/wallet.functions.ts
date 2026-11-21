@@ -190,6 +190,16 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
 
     if (txstatus === 1 || txstatus === 2) {
       const outcome = txstatus === 1 ? "paid" : "failed";
+      // Persist the final Moolre evidence before touching the wallet ledger.
+      // If the database finalization fails, an admin can reconcile but cannot refund blindly.
+      await (supabaseAdmin as any).from("moolre_payout_attempts").update({
+        status: outcome,
+        moolre_transaction_id: transactionId,
+        moolre_code: code,
+        moolre_message: message.slice(0, 500),
+        txstatus,
+        updated_at: new Date().toISOString(),
+      }).eq("externalref", externalref);
       const { error: finalErr } = await (supabaseAdmin as any).rpc("finalize_moolre_seller_withdrawal", {
         _withdrawal_id: requestId,
         _outcome: outcome,
@@ -221,6 +231,104 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
     }).eq("id", requestId);
 
     return { id: requestId, payoutStatus: "processing" as const };
+  });
+
+
+const payoutAdminSchema = z.object({ id: z.string().uuid() });
+
+async function assertWithdrawalAdmin(userId: string) {
+  const { data: isAdmin } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!isAdmin) throw new Error("Only admins can manage withdrawals.");
+}
+
+// Reconcile an uncertain Moolre payout using its original external reference.
+export const refreshMoolreWithdrawal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => payoutAdminSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertWithdrawalAdmin(context.userId);
+    const { data: req, error: reqErr } = await supabaseAdmin
+      .from("withdrawal_requests")
+      .select("id, payout_status")
+      .eq("id", data.id)
+      .single();
+    if (reqErr || !req) throw new Error("Withdrawal request not found.");
+    if (req.payout_status === "paid" || req.payout_status === "failed") {
+      return { payoutStatus: req.payout_status };
+    }
+
+    const { data: attempt } = await (supabaseAdmin as any)
+      .from("moolre_payout_attempts")
+      .select("*")
+      .eq("withdrawal_id", data.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!attempt) throw new Error("No Moolre attempt exists for this withdrawal.");
+
+    const result = await moolrePayoutRequest("/open/transact/status", {
+      type: 1, idtype: 1, id: attempt.externalref,
+    });
+    const txstatus = Number(result?.data?.txstatus);
+    const transactionId = result?.data?.transactionid ? String(result.data.transactionid) : attempt.moolre_transaction_id;
+    const code = result?.code ? String(result.code) : attempt.moolre_code;
+    const message = Array.isArray(result?.message)
+      ? result.message.join(" ")
+      : String(result?.message ?? result?.data?.reason ?? "");
+
+    if (txstatus === 1 || txstatus === 2) {
+      const outcome = txstatus === 1 ? "paid" : "failed";
+      await (supabaseAdmin as any).from("moolre_payout_attempts").update({
+        status: outcome, txstatus, moolre_transaction_id: transactionId,
+        moolre_code: code, moolre_message: message.slice(0, 500),
+        updated_at: new Date().toISOString(),
+      }).eq("id", attempt.id);
+      const { error } = await (supabaseAdmin as any).rpc("finalize_moolre_seller_withdrawal", {
+        _withdrawal_id: data.id,
+        _outcome: outcome,
+        _moolre_transaction_id: transactionId,
+        _moolre_code: code,
+        _moolre_message: message,
+        _txstatus: txstatus,
+      });
+      if (error) throw new Error("Moolre status was found, but the wallet ledger needs admin attention: " + error.message);
+      return { payoutStatus: outcome };
+    }
+
+    await (supabaseAdmin as any).from("moolre_payout_attempts").update({
+      status: "processing",
+      txstatus: [0, 3].includes(txstatus) ? txstatus : attempt.txstatus,
+      moolre_code: code,
+      moolre_message: message.slice(0, 500),
+      updated_at: new Date().toISOString(),
+    }).eq("id", attempt.id);
+    if (req.payout_status !== "needs_review") {
+      await supabaseAdmin.from("withdrawal_requests").update({
+        payout_status: "processing",
+        payout_last_error: null,
+        payout_updated_at: new Date().toISOString(),
+      }).eq("id", data.id);
+    }
+    return { payoutStatus: req.payout_status === "needs_review" ? "needs_review" : "processing" };
+  });
+
+// Refund only a request that is proven not to have been submitted to Moolre.
+export const cancelUnsubmittedMoolreWithdrawal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => payoutAdminSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertWithdrawalAdmin(context.userId);
+    const { error } = await (supabaseAdmin as any).rpc("cancel_unsubmitted_moolre_withdrawal", {
+      _withdrawal_id: data.id,
+      _admin_note: "Cancelled by admin before transfer submission",
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 const decisionSchema = z.object({
