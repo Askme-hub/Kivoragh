@@ -55,11 +55,11 @@ export function ProductCard({ product }: { product: Product }) {
       </div>
 
       <div className="flex flex-1 flex-col gap-2 px-2.5 pb-2.5 pt-1 sm:px-3 sm:pb-3">
-        <Link to="/products/$id" params={{ id: product.id }} className="line-clamp-2 min-h-[2.45rem] break-words text-[11px] font-bold leading-[1.25rem] text-foreground transition-colors hover:text-primary sm:text-[13px]">{product.name}</Link>
+        <Link to="/products/$id" params={{ id: product.id }} className="line-clamp-3 min-h-[3.35rem] break-words text-[13px] font-extrabold leading-[1.12rem] text-foreground transition-colors hover:text-primary sm:line-clamp-2 sm:min-h-[2.45rem] sm:text-[13px] sm:font-bold sm:leading-[1.25rem]">{product.name}</Link>
 
-        <div className="flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-success-ink sm:text-[10px]"><Truck size={11} /> Pay on delivery</span>
-          {rating && <span className="inline-flex items-center gap-1 text-[9px] text-muted-foreground sm:text-[10px]"><Star size={11} className="text-warning" fill="currentColor" /><b className="text-foreground">{rating.avg.toFixed(1)}</b><span>({rating.count})</span></span>}
+        <div className="flex min-h-5 flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-success-ink sm:text-[10px]"><Truck size={12} /> Pay on delivery</span>
+          {rating && <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground"><Star size={11} className="text-warning" fill="currentColor" /><b className="text-foreground">{rating.avg.toFixed(1)}</b><span>({rating.count})</span></span>}
         </div>
 
         <div className="mt-auto flex flex-wrap items-end justify-between gap-1 border-t border-border/60 pt-2">
