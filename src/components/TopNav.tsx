@@ -39,7 +39,14 @@ export function TopNav() {
 
   return (
     <header className="sticky top-0 z-40 hidden border-b border-border/80 bg-background/95 shadow-sm backdrop-blur-xl md:block">
-      <div className="h-1 bg-gradient-to-r from-primary via-flash to-primary" />
+      <div className="flex h-8 items-center justify-center gap-4 overflow-hidden bg-primary px-3 text-[10px] font-bold text-primary-foreground sm:gap-8 sm:text-[11px]">
+        <span className="whitespace-nowrap">🚚 Free Shipping on orders over GH₵500</span>
+        <span className="hidden h-4 border-l border-white/40 sm:block" />
+        <span className="hidden whitespace-nowrap sm:inline">🏷️ Big Deals. Bigger Savings!</span>
+        <span className="hidden h-4 border-l border-white/40 md:block" />
+        <span className="hidden whitespace-nowrap md:inline">👑 Shop Smart. Live Better with Kivora</span>
+      </div>
+      <div className="h-1 bg-gradient-to-r from-primary via-amber-300 to-primary" />
       <div className="border-b border-border/60 bg-muted/35">
         <div className="mx-auto flex h-8 max-w-7xl items-center justify-between px-4 text-[11px] font-medium text-muted-foreground lg:px-6">
           <span className="flex items-center gap-1.5"><MapPin size={12} className="text-primary" /> Shopping across Ghana</span>
