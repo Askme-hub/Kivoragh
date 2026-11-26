@@ -1,6 +1,6 @@
 import { useSiteContent, telHref, waNumber } from "@/lib/site-content";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Facebook, Instagram, Twitter, Youtube, Phone, Mail, MapPin, Download, Smartphone, Share2 } from "lucide-react";
+import { Facebook, Instagram, Twitter, Youtube, Phone, Mail, MapPin, Download, Smartphone, Share2, ShieldCheck, Truck, BadgeCheck } from "lucide-react";
 import { toast } from "sonner";
 import kivoraIcon from "@/assets/kivora-icon.png";
 import { useInstallPrompt, setInstallSheetOpen } from "@/lib/pwa";
@@ -123,15 +123,29 @@ export function Footer() {
   };
 
   return (
-    <footer className="mt-auto border-t border-border bg-card text-card-foreground">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-5 py-10 md:grid-cols-5">
+    <footer className="mt-auto border-t border-orange-950/10 bg-[#1f1712] text-white">
+      <div className="border-b border-white/10 bg-white/[0.035]">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-3 px-5 py-5 sm:grid-cols-3">
+          {[
+            { icon: ShieldCheck, title: "Secure checkout", detail: "Safer ways to pay" },
+            { icon: Truck, title: "Ghana-wide delivery", detail: "Shopping from every region" },
+            { icon: BadgeCheck, title: "Seller-led marketplace", detail: "Discover local businesses" },
+          ].map(({ icon: Icon, title, detail }) => (
+            <div key={title} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/15 text-orange-300"><Icon size={19} /></span>
+              <span className="min-w-0"><span className="block text-sm font-extrabold text-white">{title}</span><span className="mt-0.5 block text-xs text-white/55">{detail}</span></span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-8 gap-y-10 px-5 py-11 md:grid-cols-5 md:py-14">
         {/* Brand */}
         <div className="col-span-2 md:col-span-2">
           <Link to="/" className="flex items-center gap-2">
             <img src={kivoraIcon} alt="Kivora" className="h-9 w-9 rounded-lg" />
-            <span className="text-xl font-extrabold tracking-tight text-primary">Kivora</span>
+            <span className="text-xl font-extrabold tracking-tight text-orange-300">Kivora</span>
           </Link>
-          <p className="mt-3 max-w-xs text-sm text-muted-foreground">
+          <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/60">
             Ghana&apos;s modern marketplace. Shop everything you need with fast delivery and secure
             payments.
           </p>
@@ -154,13 +168,13 @@ export function Footer() {
         {/* Link groups */}
         {cols.map((col) => (
           <div key={col.title}>
-            <h3 className="text-sm font-bold text-foreground">{col.title}</h3>
+            <h3 className="text-sm font-extrabold tracking-wide text-white">{col.title}</h3>
             <ul className="mt-3 space-y-2">
               {col.links.map((l) => (
                 <li key={l.label}>
                   <Link
                     to={l.to}
-                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                    className="text-sm text-white/60 transition-colors hover:text-orange-300"
                   >
                     {l.label}
                   </Link>
@@ -172,22 +186,22 @@ export function Footer() {
 
         {/* Contact */}
         <div className="col-span-2 md:col-span-1">
-          <h3 className="text-sm font-bold text-foreground">Contact</h3>
-          <ul className="mt-3 space-y-3 text-sm text-muted-foreground">
+          <h3 className="text-sm font-extrabold tracking-wide text-white">Contact</h3>
+          <ul className="mt-3 space-y-3 text-sm text-white/60">
             <li className="flex items-start gap-2">
-              <Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <Phone className="mt-0.5 h-4 w-4 shrink-0 text-orange-300" />
               <span>{site.phone_primary}</span>
             </li>
             <li className="flex items-start gap-2">
-              <Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <Phone className="mt-0.5 h-4 w-4 shrink-0 text-orange-300" />
               <span>{site.phone_secondary}</span>
             </li>
             <li className="flex items-start gap-2">
-              <Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <Mail className="mt-0.5 h-4 w-4 shrink-0 text-orange-300" />
               <span className="min-w-0 break-all">{site.email}</span>
             </li>
             <li className="flex items-start gap-2">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-orange-300" />
               <span>Accra, Ghana</span>
             </li>
           </ul>
@@ -196,15 +210,15 @@ export function Footer() {
 
       {/* Get the app */}
       {!isWorkspace && (
-        <div className="border-t border-border bg-muted/30">
+        <div className="border-t border-white/10 bg-white/[0.04]">
           <div className="mx-auto flex max-w-7xl flex-col items-center gap-5 px-5 py-8 md:flex-row md:items-center md:justify-between">
             <div className="flex items-start gap-3 text-center md:text-left">
-              <div className="mt-0.5 hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex">
+              <div className="mt-0.5 hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/15 text-orange-300 sm:flex">
                 <Smartphone className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-bold text-foreground">Get Kivora on your phone</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="text-sm font-extrabold text-white">Get Kivora on your phone</p>
+                <p className="mt-0.5 text-xs text-white/55">
                   App Store &amp; Google Play coming soon. Install the free web app today.
                 </p>
               </div>
@@ -235,9 +249,9 @@ export function Footer() {
                 <button
                   type="button"
                   onClick={handlePwaInstall}
-                  className="inline-flex h-11 items-center gap-2 rounded-lg border border-border bg-background px-4 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5 active:scale-[0.98]"
+                  className="inline-flex h-11 items-center gap-2 rounded-lg border border-white/15 bg-white/[0.06] px-4 text-sm font-semibold text-white shadow-sm transition hover:border-orange-300/50 hover:bg-white/10 active:scale-[0.98]"
                 >
-                  <Download className="h-4 w-4 text-primary" />
+                  <Download className="h-4 w-4 text-orange-300" />
                   {available || isIOS ? "Install free app" : "Install web app"}
                 </button>
               )}
@@ -255,8 +269,8 @@ export function Footer() {
         </div>
       )}
 
-      <div className="border-t border-border">
-        <div className="mx-auto max-w-7xl px-5 py-4 text-center text-xs text-muted-foreground">
+      <div className="border-t border-white/10">
+        <div className="mx-auto max-w-7xl px-5 py-5 text-center text-xs text-white/45">
           © {new Date().getFullYear()} Kivora Ghana. All rights reserved.
         </div>
       </div>

@@ -50,11 +50,18 @@ export async function moolreCollect(opts: { channel: MoolreChannel; payer: strin
 }
 
 /** txstatus: 1 paid, 2 failed, 0 pending. */
-export async function moolreStatus(externalref: string): Promise<{ txstatus: 0 | 1 | 2; reason?: string }> {
+export async function moolreStatus(externalref: string): Promise<{ txstatus: 0 | 1 | 2; reason?: string; amount?: number; externalref?: string }> {
   const { account } = creds();
   const r = await call("/open/transact/status", { type: 1, idtype: 1, id: externalref, accountnumber: account });
   const tx = Number(r.data?.txstatus ?? 0);
-  return { txstatus: tx === 1 ? 1 : tx === 2 ? 2 : 0, reason: r.data?.reason };
+  const amountValue = r.data?.amount;
+  const amount = amountValue == null ? undefined : Number(amountValue);
+  return {
+    txstatus: tx === 1 ? 1 : tx === 2 ? 2 : 0,
+    reason: r.data?.reason,
+    amount: Number.isFinite(amount) ? amount : undefined,
+    externalref: typeof r.data?.externalref === "string" ? r.data.externalref : undefined,
+  };
 }
 
 /** Verify `X-Moolre-Signature: t=...,v1=...` (HMAC-SHA256 of "t.body" with the wallet secret). */
