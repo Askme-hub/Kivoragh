@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
 import { formatGHC, useShop } from "@/lib/store";
 import {
@@ -23,7 +24,7 @@ import {
 
 export const Route = createFileRoute("/orders/$id")({
   component: OrderDetails,
-  head: () => ({ meta: [{ title: "Order Details – Kivora Ghana" }] }),
+  head: () => ({ meta: [{ title: "Order Details – Kivora Ghana" }, { name: "description", content: "Review your Kivora order, payment summary, delivery address and progress." }, { property: "og:title", content: "Order Details – Kivora Ghana" }, { property: "og:description", content: "Your Kivora order items, payment and delivery progress." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
 });
 
 const STATUS_FLOW = [
@@ -165,13 +166,13 @@ function CancelBlock({ order, foodStatus }: { order: any; foodStatus?: string | 
   };
   return (
     <div className="px-4 mt-3">
-      <button
+      <Button variant="ghost"
         onClick={cancel}
         disabled={busy}
         className="w-full border border-destructive text-destructive font-bold py-3 rounded-lg disabled:opacity-50"
       >
         {busy ? "Cancelling…" : "Cancel order"}
-      </button>
+      </Button>
       {prepaid && (
         <p className="text-xs text-muted-foreground mt-1 text-center">
           Paid online: refunds are made within 2 working business days.
@@ -277,23 +278,23 @@ function OrderDetails() {
   const subtotal = Number(data.total) - Number(data.shipping_fee ?? 0) + Number(data.discount ?? 0);
 
   return (
-    <div className="pb-8">
+    <div className="mx-auto max-w-4xl pb-8">
       <PageHeader title="Order Details" />
 
       {/* Order header card */}
-      <div className="bg-card border-b border-border">
+      <div className="bg-marketplace-band text-marketplace-band-foreground">
         <div className="px-4 py-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Order Number</p>
-              <p className="text-lg font-extrabold">{data.order_number}</p>
+              <p className="text-[10px] text-marketplace-band-foreground/65 uppercase">Order number</p>
+              <p className="font-display text-2xl font-extrabold">{data.order_number}</p>
             </div>
             <StatusBadge status={displayStatus} />
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-marketplace-band-foreground/65">
             Placed on {new Date(data.created_at).toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="text-xs text-marketplace-band-foreground/65 mt-0.5">
             {new Date(data.created_at).toLocaleTimeString("en-GB")}
           </p>
         </div>
@@ -305,7 +306,7 @@ function OrderDetails() {
       </div>
 
       {/* Status Timeline */}
-      <div className="bg-card mt-2 border-b border-border">
+      <div className="mt-5 border-b border-border">
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">
           <span className="font-bold text-sm">Status Timeline</span>
           <Link
@@ -316,7 +317,7 @@ function OrderDetails() {
             Full History <ChevronRight size={14} />
           </Link>
         </div>
-        <div className="px-4 py-4">
+        <div className="px-5 py-5 md:px-8">
           {cancelled ? (
             <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/5 border border-destructive/10">
               <Ban size={22} className="text-destructive shrink-0" />
@@ -334,11 +335,11 @@ function OrderDetails() {
                 const isLastStep = i === activeStatusFlow.length - 1;
 
                 return (
-                  <li key={s} className="flex gap-3 relative">
+                  <li key={s} className="flex gap-4 relative">
                     {/* Timeline line + icon column */}
                     <div className="flex flex-col items-center shrink-0">
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
+                        className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${
                           isCurrent
                             ? "border-primary bg-primary text-primary-foreground"
                             : reached
@@ -357,7 +358,7 @@ function OrderDetails() {
                           className={`w-0.5 flex-1 mt-1 ${
                             i < currentIdx ? "bg-success" : "bg-border"
                           }`}
-                          style={{ minHeight: 28 }}
+                          style={{ minHeight: 32 }}
                         />
                       )}
                     </div>
@@ -398,7 +399,7 @@ function OrderDetails() {
       <OrderTracking orderId={data.id} userId={data.user_id} />
 
       {/* Delivery / Shipping Card */}
-      <div className="bg-card mt-2 border-b border-border">
+      <div className="mt-5 border-b border-border">
         <div className="px-4 py-3 border-b border-border flex items-center gap-2 font-bold text-sm">
           <MapPin size={16} className="text-primary" />
           {data.delivery_type === "pickup" ? "Pickup Details" : "Shipping Details"}
@@ -449,7 +450,7 @@ function OrderDetails() {
       </div>
 
       {foodOrderDetails && (
-        <div className="bg-card mt-2 border-b border-border">
+        <div className="mt-5 border-b border-border">
           <div className="px-4 py-3 border-b border-border flex items-center gap-2 font-bold text-sm">
             <Clock size={16} className="text-primary" /> Food Order Details
           </div>
@@ -463,7 +464,7 @@ function OrderDetails() {
       )}
 
       {/* Payment summary */}
-      <div className="bg-card mt-2 border-b border-border">
+      <div className="mt-5 border-b border-border">
         <div className="px-4 py-3 border-b border-border flex items-center gap-2 font-bold text-sm">
           <CreditCard size={16} className="text-primary" />
           Payment Summary
@@ -549,7 +550,7 @@ function OrderDetails() {
               const live = it.product_id ? stockMap?.[it.product_id] : undefined;
               const unavailable = !it.product_id || !live || live.stock <= 0;
               return (
-                <button
+                <Button variant="ghost"
                   disabled={unavailable}
                   onClick={() => {
                     if (!live || live.stock <= 0) return toast.error("Sorry, this item is out of stock.");
@@ -563,10 +564,10 @@ function OrderDetails() {
                     if (ok === false) toast.error(`Only ${live.stock} left — you already have the maximum in your cart.`);
                     else toast.success("Added to cart");
                   }}
-                  className="w-full bg-primary text-primary-foreground font-bold py-3 flex items-center justify-center gap-2 active:opacity-90 disabled:bg-muted disabled:text-muted-foreground"
+                  className="m-3 mt-0 w-[calc(100%-1.5rem)] rounded-lg bg-primary-soft text-primary font-bold py-3 flex items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground disabled:bg-muted disabled:text-muted-foreground"
                 >
                   <RefreshCw size={16} /> {unavailable ? "Out of stock" : "Buy Again"}
-                </button>
+                </Button>
               );
             })()}
           </div>

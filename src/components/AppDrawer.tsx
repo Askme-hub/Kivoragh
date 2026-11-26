@@ -21,6 +21,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth, useIsAdmin } from "@/hooks/use-auth";
 import { useIsSeller } from "@/hooks/use-seller";
@@ -50,7 +51,7 @@ function SectionLabel({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="mt-3 mb-1 flex items-center justify-between border-t border-border px-5 pt-3">
+    <div className="mt-4 mb-2 flex items-center justify-between border-t border-border px-5 pt-4">
       <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
         {children}
       </p>
@@ -97,13 +98,13 @@ export function AppDrawer() {
   }) => (
     <Link
       to={to}
-      className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition ${
+      className={`flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition ${
         active
-          ? "bg-primary/10 text-primary"
+          ? "bg-primary-soft text-primary"
           : "text-foreground/80 hover:bg-muted"
       }`}
     >
-      <span className="relative">
+      <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/70">
         <Icon size={20} strokeWidth={active ? 2.4 : 1.9} />
         {!!badge && badge > 0 && (
           <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-bold text-primary-foreground">
@@ -123,21 +124,21 @@ export function AppDrawer() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <button
+        <Button variant="ghost"
           aria-label="Open menu"
           className="flex h-10 items-center gap-1 rounded-full bg-background pl-2.5 pr-3 text-primary shadow-elevated ring-2 ring-primary-foreground/60 transition active:scale-95"
         >
           <Menu size={22} strokeWidth={2.75} />
           <span className="text-[11px] font-black uppercase">Menu</span>
-        </button>
+        </Button>
       </SheetTrigger>
 
       <SheetContent
         side="left"
-        className="w-[82%] max-w-xs p-0 flex flex-col bg-background"
+        className="w-[88%] max-w-sm p-0 flex flex-col bg-background"
       >
         {/* Brand header */}
-        <div className="brand-band bg-primary p-5 flex items-center gap-3">
+        <div className="bg-marketplace-band text-marketplace-band-foreground p-6 flex items-center gap-3">
           {user ? (
             <UserAvatar user={user} size={44} className="ring-2 ring-primary-foreground/50" />
           ) : (
@@ -237,12 +238,12 @@ export function AppDrawer() {
             <ThemeToggle />
           </div>
           {user ? (
-            <button
+            <Button variant="ghost"
               onClick={logout}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-destructive hover:bg-destructive/10 transition"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-destructive hover:bg-destructive/10 transition"
             >
               <LogOut size={20} /> Logout
-            </button>
+            </Button>
           ) : (
             <Link
               to="/login"
@@ -268,22 +269,22 @@ export function MobileTopBar() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 shadow-sm backdrop-blur md:hidden">
       <div className="flex items-center gap-2 px-3 pt-2.5 pb-2">
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={() => router.navigate({ to: "/search", search: { q: "" } })}
           aria-label="Search products on Kivora"
-          className="flex h-14 min-w-0 flex-1 items-center gap-3 rounded-2xl border-2 border-primary/25 bg-card px-3.5 text-left shadow-[0_5px_18px_-12px_hsl(var(--primary)/0.45)] transition hover:border-primary/50 active:scale-[0.99]"
+          className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-full border border-primary/25 bg-card px-3.5 text-left shadow-soft transition hover:border-primary/50 active:scale-[0.99]"
         >
           <Search size={22} strokeWidth={2.3} className="shrink-0 text-primary" />
-          <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-muted-foreground">
+          <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-muted-foreground">
             Search products, brands and categories
           </span>
-          <span className="rounded-xl bg-primary px-3.5 py-2 text-sm font-bold text-primary-foreground">
+          <span className="rounded-full bg-primary px-3 py-2 text-sm font-bold text-primary-foreground">
             Search
           </span>
-        </button>
+        </Button>
         {user && (
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5">
             <MessageBell variant="mobile" />
           </div>
         )}

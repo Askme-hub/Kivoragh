@@ -2,12 +2,13 @@ import { useSiteContent, telHref, waNumber } from "@/lib/site-content";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Zap, Phone, ChevronRight, PackageOpen, Truck, ShieldCheck, BadgeCheck, Sparkles, UtensilsCrossed } from "lucide-react";
+import { Zap, Phone, ChevronRight, PackageOpen, Truck, ShieldCheck, BadgeCheck, Sparkles, UtensilsCrossed, ArrowUpRight, Store, Headphones } from "lucide-react";
 
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCardSkeleton, ProductGridSkeleton } from "@/components/ProductCardSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { BannerSlider } from "@/components/BannerSlider";
+import { Button } from "@/components/ui/button";
 import { InstallAppButton } from "@/components/InstallAppButton";
 
 import { useProducts, toProduct, type DbProduct } from "@/lib/products";
@@ -76,7 +77,7 @@ function useGroupedProducts() {
     for (const p of products) {
       const key = p.category ?? "Other";
       if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(p);
+      groups.get(key)?.push(p);
     }
     return groups;
   }, [products]);
@@ -119,7 +120,7 @@ function CategoryBand({
       <div className="overflow-x-auto scrollbar-none">
         <div className="flex gap-3 px-4 pb-2">
           {products.slice(0, 10).map((p) => (
-            <div key={p.id} className="min-w-[160px] max-w-[170px]">
+            <div key={p.id} className="w-[170px] shrink-0">
               <ProductCard product={p} />
             </div>
           ))}
@@ -142,7 +143,7 @@ function Home() {
     ? products
         .filter((p) => flashMap.has(p.id))
         .map((p) => {
-          const sp = flashMap.get(p.id)!;
+          const sp = flashMap.get(p.id) ?? p.price;
           return {
             ...p,
             oldPrice: p.price,
@@ -154,11 +155,29 @@ function Home() {
   const displayFlash = flashProducts.length > 0 ? flashProducts : products.slice(0, 8);
 
   return (
-    <div className="min-h-screen bg-background pb-10">
-      <h1 className="sr-only">Kivora Ghana — shop electronics, fashion, groceries and more</h1>
-
-      {/* HERO / BANNER SLIDER */}
-      <BannerSlider />
+    <div className="marketplace-products min-h-screen min-w-0 bg-background pb-10">
+      <section className="bg-marketplace-band text-marketplace-band-foreground">
+        <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 md:px-8 md:py-7">
+          <div className="min-w-0">
+            <p className="mb-1 text-[10px] font-bold uppercase text-teal">Your Ghanaian marketplace</p>
+            <h1 className="font-display text-3xl font-extrabold leading-tight md:text-4xl">Kivora Ghana<span className="text-primary">.</span></h1>
+            <p className="mt-1 text-xs text-marketplace-band-foreground/70 md:text-sm">Everyday essentials. Standout finds. Local sellers.</p>
+          </div>
+          <Button asChild size="sm" className="rounded-full"><Link to="/categories">Shop now <ArrowUpRight /></Link></Button>
+        </div>
+        <div className="flex items-center justify-between gap-2 border-t border-marketplace-band-foreground/15 px-5 py-2 text-[10px] font-semibold text-marketplace-band-foreground/75 md:px-8 md:text-xs">
+          <span className="flex items-center gap-1.5"><Truck size={14} className="text-teal" /> All 16 regions</span>
+          <span className="flex items-center gap-1.5"><ShieldCheck size={14} className="text-teal" /> Secure checkout</span>
+          <span>Prices in GH₵</span>
+        </div>
+      </section>
+      <section className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+        <div className="min-w-0"><BannerSlider /></div>
+        <aside className="hidden flex-col justify-center gap-6 border-l border-border px-5 lg:flex">
+          <Link to="/seller" className="group text-foreground"><Store className="mb-3 text-primary" size={26} /><span className="block text-base font-extrabold">Grow with Kivora</span><span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">Become a seller <ArrowUpRight size={14} /></span></Link>
+          <Link to="/help" className="border-t border-border pt-5 text-foreground"><Headphones className="mb-3 text-primary" size={26} /><span className="block text-base font-extrabold">Need a hand?</span><span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">Help & support <ArrowUpRight size={14} /></span></Link>
+        </aside>
+      </section>
 
       <div className="px-4 mt-4">
         <InstallAppButton />
@@ -168,15 +187,15 @@ function Home() {
       <div className="mt-5 px-4">
         <Link
           to="/food"
-          className="flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-flash px-4 py-4 text-primary-foreground shadow-soft transition hover:opacity-95"
+          className="flex items-center justify-between gap-3 overflow-hidden rounded-lg bg-teal px-4 py-4 text-teal-foreground shadow-soft transition hover:opacity-95"
         >
           <span className="flex min-w-0 items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-card/35">
               <UtensilsCrossed size={22} />
             </span>
             <span className="min-w-0">
               <span className="block text-sm font-extrabold">Food & Groceries</span>
-              <span className="mt-0.5 block text-xs text-primary-foreground/85">Discover local food sellers and browse their menus</span>
+              <span className="mt-0.5 block text-xs text-teal-foreground/85">Discover local food sellers and browse their menus</span>
             </span>
           </span>
           <ChevronRight size={21} className="shrink-0" />
@@ -190,7 +209,7 @@ function Home() {
           { icon: Truck, t: "16 regions", d: "Nationwide" },
           { icon: BadgeCheck, t: "Verified sellers", d: "48h protection" },
         ].map(({ icon: I, t, d }) => (
-          <div key={t} className="flex items-center gap-1.5 rounded-xl bg-card px-2 py-2 ring-1 ring-border/60">
+          <div key={t} className="flex flex-col items-center gap-1.5 border-b border-border px-2 py-3 text-center sm:flex-row sm:text-left">
             <I size={18} className="shrink-0 text-primary" />
             <div className="min-w-0 leading-tight">
               <p className="truncate text-[11px] font-bold text-foreground">{t}</p>
@@ -204,7 +223,7 @@ function Home() {
       <div className="mt-4 px-4">
         <Link
           to="/shipping"
-          className="flex items-center justify-between gap-3 rounded-2xl bg-primary-soft px-4 py-3"
+          className="flex items-center justify-between gap-3 rounded-lg bg-primary-soft px-4 py-3"
         >
           <span className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-foreground">
             Delivery across
@@ -216,7 +235,7 @@ function Home() {
       </div>
 
       {/* FLASH SALES */}
-      <section id="flash-sales" className="mx-3 mt-7 scroll-mt-20 overflow-hidden rounded-2xl bg-flash shadow-elevated md:mx-4">
+      <section id="flash-sales" className="mx-3 mt-7 scroll-mt-20 overflow-hidden rounded-lg bg-flash shadow-elevated md:mx-4">
         <div className="flex items-center justify-between gap-3 px-3 py-3 text-flash-foreground">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h2 className="flex items-center gap-1 truncate text-lg font-black uppercase italic tracking-tight md:text-2xl">
@@ -235,12 +254,12 @@ function Home() {
           <div className="flex gap-2.5 px-3 pb-3">
             {isLoading
               ? Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="min-w-[150px] max-w-[160px]">
+                  <div key={i} className="w-[160px] shrink-0">
                     <ProductCardSkeleton />
                   </div>
                 ))
               : displayFlash.map((p: Product) => (
-                  <div key={p.id} className="min-w-[150px] max-w-[160px]">
+                  <div key={p.id} className="w-[160px] shrink-0">
                     <ProductCard product={p} />
                   </div>
                 ))}
@@ -252,7 +271,7 @@ function Home() {
       <div className="mt-6 px-4">
         <a
           href={telHref(site.phone_primary)}
-          className="flex items-center gap-3 rounded-3xl bg-primary-soft px-4 py-3.5 shadow-soft"
+          className="flex items-center gap-3 rounded-lg bg-primary-soft px-4 py-3.5 shadow-soft"
         >
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-primary text-primary-foreground">
             <Phone size={17} />
@@ -268,12 +287,11 @@ function Home() {
 
       {/* RECOMMENDED */}
       <section className="mt-7">
-        <div className="mb-3 flex items-center justify-center gap-2 px-4">
-          <span className="h-px flex-1 bg-border" />
+        <div className="mb-4 flex items-center justify-between gap-2 px-4">
           <h2 className="flex items-center gap-1.5 text-lg font-black uppercase tracking-tight text-foreground md:text-2xl">
             <Sparkles size={18} className="text-primary" /> Picked for you
           </h2>
-          <span className="h-px flex-1 bg-border" />
+          <SeeAll />
         </div>
         {isLoading ? (
           <div className="px-4">

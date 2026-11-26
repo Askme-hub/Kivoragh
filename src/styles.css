@@ -91,6 +91,9 @@
   --color-flash-foreground: var(--flash-foreground);
   --color-teal: var(--teal);
   --color-teal-foreground: var(--teal-foreground);
+  --color-marketplace-band: var(--marketplace-band);
+  --color-marketplace-band-foreground: var(--marketplace-band-foreground);
+  --color-product-backdrop: var(--product-backdrop);
 
   --font-sans: "Figtree", system-ui, sans-serif;
   --font-display: "Outfit", "Figtree", system-ui, sans-serif;
@@ -101,6 +104,9 @@
 ========================================= */
 
 :root {
+  --marketplace-band: oklch(0.22 0.012 40);
+  --marketplace-band-foreground: oklch(0.98 0.002 85);
+  --product-backdrop: oklch(0.97 0.003 85);
   --radius: 1rem;
 
   /* MAIN — warm cream canvas */
@@ -205,6 +211,9 @@
 ========================================= */
 
 .dark {
+  --marketplace-band: oklch(0.2 0.012 40);
+  --marketplace-band-foreground: oklch(0.98 0.002 85);
+  --product-backdrop: oklch(0.24 0.005 85);
   --background: oklch(0.14 0.01 40);
   --foreground: oklch(0.98 0.002 85);
 
@@ -454,6 +463,14 @@
 .shadow-elevated {
   box-shadow: 0 4px 12px color-mix(in oklab, var(--foreground) 8%, transparent),
     0 12px 32px color-mix(in oklab, var(--foreground) 8%, transparent);
+}
+
+.shadow-bottom-nav {
+  box-shadow: 0 -8px 28px -18px color-mix(in oklab, var(--foreground) 28%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketplace-products *, .marketplace-products { transition: none; }
 }
 
 .hover-lift {

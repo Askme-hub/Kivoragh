@@ -163,7 +163,7 @@ function RootComponent() {
       <div className="min-h-screen flex flex-col bg-background">
         {!workspace && <MobileTopBar />}
         {!workspace && <TopNav />}
-        <main className={workspace ? "flex-1 w-full max-w-[1440px] mx-auto md:p-3" : "flex-1 w-full max-w-md md:max-w-7xl mx-auto md:px-4 pb-24 md:pb-0"}>
+        <main className={workspace ? "flex-1 w-full max-w-[1440px] mx-auto md:p-3" : "flex-1 min-w-0 w-full md:max-w-7xl mx-auto md:px-4 pb-24 md:pb-0"}>
           <Outlet />
         </main>
         {!workspace && <Footer />}

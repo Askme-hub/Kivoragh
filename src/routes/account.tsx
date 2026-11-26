@@ -8,11 +8,12 @@ import { useEffect, useState } from "react";
 import { useProfile } from "@/lib/profile";
 import { useIsSeller } from "@/hooks/use-seller";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/account")({
   component: Account,
-  head: () => ({ meta: [{ title: "Account – Kivora Ghana" }] }),
+  head: () => ({ meta: [{ title: "My Account – Kivora Ghana" }, { name: "description", content: "Manage your Kivora profile, store credit, referrals, orders and account settings." }, { property: "og:title", content: "My Account – Kivora Ghana" }, { property: "og:description", content: "Your Kivora profile, orders, store credit and referrals in one place." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
 });
 
 
@@ -46,12 +47,10 @@ function Account() {
   if (!user) {
     return (
       <div>
-        <div className="px-4 py-10 text-center">
-          <h1 className="text-xl font-bold">You're not logged in</h1>
+        <div className="mx-auto max-w-lg px-6 py-14 text-center"><div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft text-primary"><Wallet size={28} /></div>
+          <h1 className="font-display text-3xl font-bold">Your Kivora account</h1>
           <p className="text-muted-foreground text-sm mt-2">Sign in to view your account, orders and inbox.</p>
-          <Link to="/login" className="inline-block mt-4 btn-hot px-6 py-3">
-            Log in / Sign up
-          </Link>
+          <Button asChild className="mt-6 rounded-full px-6"><Link to="/login">Log in / Sign up</Link></Button>
         </div>
       </div>
     );
@@ -73,9 +72,9 @@ function Account() {
   ];
 
   return (
-    <div>
-      <div className="px-4 py-4 border-t border-border">
-        <div className="flex items-center gap-4">
+    <div className="mx-auto max-w-4xl pb-8">
+      <div className="bg-marketplace-band px-5 py-6 text-marketplace-band-foreground md:px-8 md:py-8">
+        <div className="flex flex-wrap items-center gap-3">
           {avatarUrl ? (
             <img
               src={avatarUrl}
@@ -83,24 +82,24 @@ function Account() {
               className="w-16 h-16 rounded-full object-cover border-2 border-border shrink-0"
             />
           ) : (
-            <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center text-2xl font-extrabold shrink-0">
+            <div className="w-16 h-16 rounded-full bg-marketplace-band-foreground/10 text-marketplace-band-foreground flex items-center justify-center text-2xl font-extrabold shrink-0">
               {(name ?? "K").charAt(0).toUpperCase()}
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-bold truncate">Welcome {name}!</h1>
-            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+            <p className="text-[10px] font-bold uppercase text-teal">My account</p><h1 className="font-display text-2xl font-bold truncate">Hello, {name}</h1>
+            <p className="text-xs text-marketplace-band-foreground/65 truncate">{user.email}</p>
           </div>
           <Link
             to="/settings"
-            className="shrink-0 rounded-full border-2 border-primary text-primary text-xs font-bold px-4 py-2"
+            className="shrink-0 rounded-full border border-marketplace-band-foreground/25 text-marketplace-band-foreground text-xs font-bold px-4 py-2"
           >
             Edit profile
           </Link>
         </div>
-        <div className="flex items-center gap-2 mt-4 rounded-2xl bg-muted px-4 py-3">
+        <div className="flex items-center gap-3 mt-5 border-t border-marketplace-band-foreground/20 pt-4">
           <Wallet size={22} className="text-primary" />
-          <p className="text-primary font-semibold text-sm">Kivora Store Credit: GH₵ {storeCredit.toFixed(2)}</p>
+          <div><p className="text-xs text-marketplace-band-foreground/65">Kivora Store Credit</p><p className="mt-1 text-xl font-extrabold">GH₵ {storeCredit.toFixed(2)}</p></div><Link to="/referrals" className="ml-auto flex items-center gap-1.5 text-xs font-bold text-teal"><Gift size={16} /> Invite & Earn <ChevronRight size={14} /></Link>
         </div>
       </div>
 
@@ -118,10 +117,10 @@ function Account() {
         <ChevronRight size={20} />
       </Link>
 
-      <div className="bg-muted px-4 py-3 flex gap-2">
+      <div className="px-4 py-5 flex flex-wrap gap-3">
         <a
           href="tel:+233257573471"
-          className="flex-1 btn-hot py-3 flex items-center justify-center gap-2"
+          className="min-w-0 flex-1 rounded-lg bg-primary-soft text-primary py-3 flex items-center justify-center gap-2 text-sm font-bold"
         >
           <MessageSquare size={18} /> Call Support
         </a>
@@ -129,7 +128,7 @@ function Account() {
           href="https://wa.me/233257573471"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 bg-background border-2 border-success text-success font-bold py-3 rounded-md flex items-center justify-center gap-2"
+          className="min-w-0 flex-1 bg-success-soft text-success-ink font-bold py-3 rounded-lg flex items-center justify-center gap-2 text-sm"
         >
           <MessageCircle size={18} /> WhatsApp
         </a>
@@ -145,10 +144,10 @@ function Account() {
         ))}
       </Section>
 
-      <div className="mx-0 mt-2 bg-muted">
-        <button onClick={logout} className="block w-full text-center py-4 text-primary font-bold">
+      <div className="mx-4 mt-6 border-t border-border">
+        <Button variant="ghost" onClick={logout} className="w-full mt-3 text-center py-4 text-destructive font-bold">
           Logout
-        </button>
+        </Button>
       </div>
       <div className="h-6" />
     </div>
@@ -159,17 +158,17 @@ type AccountLink = "/referrals" | "/my-reviews" | "/vouchers" | "/recently-viewe
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mt-2">
-      <p className="px-4 py-2 text-sm text-muted-foreground font-semibold border-b border-border">{title}</p>
-      {children}
-    </div>
+    <section className="mt-4 px-4">
+      <h2 className="pb-3 text-xs text-muted-foreground font-bold uppercase">{title}</h2>
+      <div className="grid md:grid-cols-2 md:gap-x-8">{children}</div>
+    </section>
   );
 }
 
 function Row({ icon: Icon, label, to, soon }: { icon?: any; label: string; to?: AccountLink; soon?: boolean }) {
   const content = (
-    <div className="flex items-center gap-4 px-4 py-4 border-b border-border bg-card">
-      {Icon && <Icon size={20} className="text-foreground/80" />}
+    <div className="group flex items-center gap-3 py-3.5 border-b border-border text-sm transition hover:text-primary">
+      {Icon && <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-primary"><Icon size={19} /></span>}
       <span className="flex-1">{label}</span>
       {soon && (
         <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">
@@ -181,12 +180,12 @@ function Row({ icon: Icon, label, to, soon }: { icon?: any; label: string; to?: 
   );
   if (to) return <Link to={to}>{content}</Link>;
   return (
-    <button
+    <Button variant="ghost"
       className="w-full text-left"
       onClick={() => toast.info(`${label} is coming soon to Kivora.`)}
     >
       {content}
-    </button>
+    </Button>
   );
 }
 

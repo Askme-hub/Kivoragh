@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Package, ChevronRight, ShoppingBag } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHC } from "@/lib/store";
 
 export const Route = createFileRoute("/orders/")({
   component: Orders,
-  head: () => ({ meta: [{ title: "My Orders – Kivora Ghana" }] }),
+  head: () => ({ meta: [{ title: "My Orders – Kivora Ghana" }, { name: "description", content: "View purchases, food orders and delivery updates from Kivora Ghana." }, { property: "og:title", content: "My Orders – Kivora Ghana" }, { property: "og:description", content: "Track your Kivora purchases and food orders." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
 });
 
 const statusLabel: Record<string, { text: string; tone: string }> = {
@@ -63,39 +65,39 @@ function Orders() {
   );
 
   return (
-    <div>
-      <h1 className="px-4 py-4 text-2xl font-bold border-t border-border">Orders</h1>
+    <div className="mx-auto max-w-4xl px-4 py-6">
+      <div className="mb-6 flex items-center justify-between gap-3"><div><p className="mb-1 text-[10px] font-bold uppercase text-primary">My purchases</p><h1 className="font-display text-3xl font-bold">Orders</h1></div><ShoppingBag size={28} className="text-primary" /></div>
 
-      <div className="flex border-b border-border bg-card">
+      <div className="mb-5 flex gap-2 border-b border-border">
         {(["ongoing", "cancelled"] as const).map((t) => (
-          <button
+          <Button variant="ghost"
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 py-3 text-sm font-bold uppercase tracking-wide ${
+            className={`h-auto flex-1 rounded-none px-2 py-3 text-xs font-bold sm:text-sm ${
               tab === t ? "text-primary border-b-2 border-primary" : "text-muted-foreground"
             }`}
           >
-            {t === "ongoing" ? "Ongoing/Delivered" : "Cancelled/Returned"}
-          </button>
+            {t === "ongoing" ? "Ongoing & delivered" : "Cancelled & returned"}
+          </Button>
         ))}
       </div>
 
       {isLoading ? (
         <p className="p-6 text-center text-muted-foreground text-sm">Loading…</p>
       ) : filtered.length === 0 ? (
-        <p className="p-10 text-center text-muted-foreground text-sm">No orders here yet.</p>
+        <div className="py-16 text-center"><Package size={40} className="mx-auto mb-4 text-muted-foreground" /><h2 className="text-lg font-bold">No orders here yet</h2><p className="mt-2 text-sm text-muted-foreground">Your purchases will appear here.</p><Button asChild className="mt-5 rounded-full"><Link to="/categories">Browse products <ChevronRight /></Link></Button></div>
       ) : (
         filtered.map((o) => {
           const first = o.order_items?.[0];
-          const lab = statusLabel[String(o.display_status)] ?? statusLabel.placed;
+          const lab = statusLabel[String(o.display_status)] ?? { text: "ORDER PLACED", tone: "bg-primary-soft text-primary" };
           return (
             <Link
               key={o.id}
-              to="/orders/status/$id"
+              to="/orders/$id"
               params={{ id: String(o.id) }}
-              className="flex gap-3 p-3 bg-card border-b border-border"
+              className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-soft transition hover:border-primary/35 sm:p-4"
             >
-              <div className="w-20 h-20 bg-muted shrink-0 rounded">
+              <div className="w-16 h-16 bg-product-backdrop shrink-0 rounded-md sm:h-20 sm:w-20">
                 {first?.image_url && (
                   <img src={first.image_url} alt="" loading="lazy" className="w-full h-full object-contain" />
                 )}
@@ -108,7 +110,7 @@ function Orders() {
                 </span>
                 <p className="text-xs mt-1 text-muted-foreground">On {new Date(o.created_at).toLocaleDateString()}</p>
               </div>
-              <div className="text-sm font-bold text-foreground whitespace-nowrap self-center">{formatGHC(Number(o.total))}</div>
+              <div className="ml-auto flex items-center gap-2 text-sm font-extrabold text-foreground whitespace-nowrap self-center">{formatGHC(Number(o.total))}<ChevronRight size={16} className="text-muted-foreground" /></div>
             </Link>
           );
         })

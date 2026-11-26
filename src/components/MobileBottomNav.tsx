@@ -10,7 +10,7 @@ const tabs = [
   { to: "/account", label: "Account", icon: UserSolid },
 ] as const;
 
-/** Jumia-style edge-to-edge 4-tab bar for phones. */
+/** Compact, thumb-friendly navigation for phones. */
 export function MobileBottomNav() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const count = useShop((s) => s.cartCount());
@@ -20,29 +20,28 @@ export function MobileBottomNav() {
   if (path === "/login" || path === "/checkout") return null;
 
   return (
-    <nav className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
-      <div className="flex">
-        {tabs.map((t) => {
-          const active = "exact" in t ? path === t.to : path === t.to || path.startsWith(t.to + "/");
-          const Icon = t.icon;
+    <nav aria-label="Mobile navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-bottom-nav backdrop-blur-xl md:hidden">
+      <div className="mx-auto flex max-w-xl">
+        {tabs.map((tab) => {
+          const active = "exact" in tab ? path === tab.to : path === tab.to || path.startsWith(tab.to + "/");
+          const Icon = tab.icon;
           return (
             <Link
-              key={t.to}
-              to={t.to}
-              className={`relative flex flex-1 flex-col items-center gap-0.5 pt-2 pb-1.5 text-[11px] font-semibold ${
-                active ? "text-primary" : "text-muted-foreground"
-              }`}
+              key={tab.to}
+              to={tab.to}
+              aria-current={active ? "page" : undefined}
+              className={`relative flex min-h-[58px] flex-1 flex-col items-center justify-center gap-1 px-2 pt-1 text-[10px] font-semibold transition-colors active:bg-muted/70 ${active ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
             >
-              {active && <span className="absolute inset-x-6 top-0 h-0.5 rounded-full bg-primary" />}
-              <span className="relative">
-                <Icon size={23} className={active ? "" : "opacity-80"} />
-                {"cart" in t && mounted && count > 0 && (
-                  <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
-                    {count}
+              {active && <span className="absolute inset-x-7 top-0 h-[3px] rounded-b-full bg-primary" />}
+              <span className={`relative flex h-8 w-10 items-center justify-center rounded-2xl transition-colors ${active ? "bg-primary/10" : ""}`}>
+                <Icon size={22} className={active ? "" : "opacity-80"} />
+                {"cart" in tab && mounted && count > 0 && (
+                  <span className="absolute right-0 top-0 flex h-[17px] min-w-[17px] -translate-y-0.5 translate-x-1 items-center justify-center rounded-full border-2 border-background bg-primary px-1 text-[9px] font-bold text-primary-foreground">
+                    {count > 99 ? "99+" : count}
                   </span>
                 )}
               </span>
-              {t.label}
+              <span>{tab.label}</span>
             </Link>
           );
         })}
