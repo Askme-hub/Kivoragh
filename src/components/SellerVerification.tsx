@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { requestSellerVerification } from "@/lib/seller-verification.functions";
 import { toast } from "sonner";
 import { BadgeCheck, Clock, ShieldX, ShieldQuestion } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   userId: string;
@@ -39,6 +40,7 @@ const COPY: Record<string, { label: string; message: string; icon: any; tone: st
 
 export function SellerVerification({ userId, status, verificationStatus, onChanged }: Props) {
   const [busy, setBusy] = useState(false);
+  const submitVerificationRequest = useServerFn(requestSellerVerification);
   const info = COPY[verificationStatus] ?? COPY.not_verified;
   const Icon = info.icon;
   const canRequest =
@@ -46,14 +48,15 @@ export function SellerVerification({ userId, status, verificationStatus, onChang
 
   const request = async () => {
     setBusy(true);
-    const { error } = await supabase
-      .from("seller_profiles")
-      .update({ verification_status: "pending" } as any)
-      .eq("user_id", userId);
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Verification requested — an admin will review it");
-    onChanged?.();
+    try {
+      await submitVerificationRequest({ data: { user_id: userId } });
+      toast.success("Verification requested — an admin will review it");
+      onChanged?.();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not submit verification request");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
