@@ -1,6 +1,33 @@
 -- Kivora security hardening: protect financial records and seller verification.
 -- Apply to staging first after confirming the existing schema and migration history.
 
+-- Keep this migration safe to apply after older seller-verification migrations
+-- that may have been only partially applied.
+ALTER TABLE public.seller_profiles
+  ADD COLUMN IF NOT EXISTS verification_status text NOT NULL DEFAULT 'not_verified',
+  ADD COLUMN IF NOT EXISTS verified_at timestamptz,
+  ADD COLUMN IF NOT EXISTS verified_by uuid,
+  ADD COLUMN IF NOT EXISTS verification_note text,
+  ADD COLUMN IF NOT EXISTS verification_requested_at timestamptz;
+
+CREATE TABLE IF NOT EXISTS public.seller_verification_log (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  seller_id uuid NOT NULL,
+  actor_id uuid,
+  action text NOT NULL,
+  old_status text,
+  new_status text NOT NULL,
+  note text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.seller_verification_log ENABLE ROW LEVEL SECURITY;
+GRANT SELECT ON public.seller_verification_log TO authenticated;
+GRANT ALL ON public.seller_verification_log TO service_role;
+DROP POLICY IF EXISTS "verification log read" ON public.seller_verification_log;
+CREATE POLICY "verification log read" ON public.seller_verification_log
+  FOR SELECT TO authenticated
+  USING (public.has_role(auth.uid(), 'admin') OR seller_id = auth.uid());
+
 -- Financial ledger and wallet mutations are server/database-trigger only.
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.seller_wallets FROM PUBLIC, anon, authenticated;
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.transactions FROM PUBLIC, anon, authenticated;
