@@ -70,7 +70,14 @@ export const startMoolrePayment = createServerFn({ method: "POST" })
       return { order_id: order.id, next: "paid" as const, message: "Your order is fully paid with Kivora Store Credit.", store_credit_applied: storeCreditApplied, amount_due: 0 };
     }
     const reference = `KV-${order.id.replace(/-/g, "").slice(0, 12)}-${Date.now()}`;
-    await supabaseAdmin.from("orders").update({ payment_reference: reference, payment_method: "online" } as any).eq("id", order.id);
+    const { error: referenceError } = await supabaseAdmin.from("orders")
+      .update({ payment_reference: reference, payment_method: "online" } as any)
+      .eq("id", order.id)
+      .eq("payment_status", "pending");
+    if (referenceError) {
+      await supabaseAdmin.from("orders").delete().eq("id", order.id).eq("payment_status", "pending");
+      throw new Error("Could not securely prepare this payment. Please try again.");
+    }
     let r: { next: "otp" | "prompt" | "error"; message?: string };
     try {
       r = await moolreCollect({ channel: data.channel, payer: data.payer, amount: amountDue, externalref: reference });
@@ -80,7 +87,11 @@ export const startMoolrePayment = createServerFn({ method: "POST" })
       return { order_id: order.id, next: "prompt" as const, message: "We're checking your payment request. Please wait for confirmation before trying again." };
     }
     if (r.next === "error") {
-      await supabaseAdmin.from("orders").update({ payment_status: "failed" }).eq("id", order.id);
+      const { error: failError } = await supabaseAdmin.from("orders")
+        .update({ payment_status: "failed" })
+        .eq("id", order.id)
+        .eq("payment_status", "pending");
+      if (failError) throw new Error("The payment provider rejected the request, but the order status could not be updated. Please contact support.");
       return { order_id: order.id, next: "error" as const, message: r.message ?? "The payment request could not be started." };
     }
     return { order_id: order.id, next: r.next, message: r.message, store_credit_applied: storeCreditApplied, amount_due: amountDue };
