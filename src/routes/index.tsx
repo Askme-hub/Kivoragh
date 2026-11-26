@@ -207,36 +207,36 @@ function Home() {
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-orange-50 px-3 py-4 dark:bg-orange-950/20 sm:grid-cols-4 sm:gap-3 sm:px-5">
+        <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-orange-50 px-2.5 py-3 dark:bg-orange-950/20 sm:mt-4 sm:grid-cols-4 sm:gap-3 sm:rounded-2xl sm:px-5 sm:py-4">
           {[
             { icon: Truck, title: "Fast & Reliable Delivery", detail: "Across Ghana" },
             { icon: ShieldCheck, title: "Secure Payments", detail: "MoMo, Card & More" },
             { icon: Headphones, title: "24/7 Customer Support", detail: "We're always here" },
             { icon: BadgeCheck, title: "Easy Returns", detail: "Shop with confidence" },
           ].map(({icon: Icon,title,detail}) => (
-            <div key={title} className="flex items-center gap-2.5 border-border/70 px-1 sm:gap-3 sm:border-r last:border-0 sm:px-3">
-              <Icon size={27} className="shrink-0 text-primary sm:h-8 sm:w-8"/>
-              <div className="min-w-0"><p className="text-[11px] font-extrabold text-foreground sm:text-xs">{title}</p><p className="mt-0.5 text-[10px] text-muted-foreground sm:text-xs">{detail}</p></div>
+            <div key={title} className="flex min-w-0 items-center gap-2 border-border/70 px-1 py-1 sm:gap-3 sm:border-r sm:px-3">
+              <Icon size={23} className="shrink-0 text-primary sm:h-8 sm:w-8"/>
+              <div className="min-w-0"><p className="text-[10px] font-extrabold leading-tight text-foreground sm:text-xs">{title}</p><p className="mt-0.5 text-[9px] leading-tight text-muted-foreground sm:text-xs">{detail}</p></div>
             </div>
           ))}
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[172px_minmax(0,1fr)] lg:grid-cols-[190px_minmax(0,1fr)]">
-          <Link to="/account" className="brand-band flex min-h-[170px] flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 via-primary to-amber-500 p-4 text-white shadow-elevated transition hover:-translate-y-0.5">
-            <div><div className="text-3xl">👑</div><p className="mt-1 text-xl font-black">Kivora Plus</p><p className="text-xs font-semibold text-white/90">Enjoy more benefits!</p></div>
-            <div className="space-y-1.5 text-[11px] font-bold"><p>✓ Exclusive Deals</p><p>✓ Priority Support</p><p>✓ Free Returns</p></div>
-            <span className="inline-flex w-fit items-center gap-1 rounded-full bg-white px-3 py-2 text-[11px] font-extrabold text-orange-600">Upgrade Now <ChevronRight size={13}/></span>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:mt-4 sm:gap-4 md:grid-cols-[172px_minmax(0,1fr)] lg:grid-cols-[190px_minmax(0,1fr)]">
+          <Link to="/account" className="brand-band flex min-h-0 flex-row items-center justify-between gap-3 overflow-hidden rounded-xl bg-gradient-to-r from-orange-500 via-primary to-amber-500 p-3 text-white shadow-elevated transition hover:-translate-y-0.5 sm:min-h-[170px] sm:rounded-2xl sm:p-4 md:flex-col md:items-stretch md:justify-between">
+            <div className="flex min-w-0 items-center gap-2.5 md:block"><div className="text-2xl sm:text-3xl">👑</div><div className="min-w-0"><p className="text-base font-black leading-tight sm:text-xl">Kivora Plus</p><p className="text-[10px] font-semibold text-white/90 sm:text-xs">Enjoy more benefits!</p></div></div>
+            <div className="hidden space-y-1.5 text-[11px] font-bold sm:block"><p>✓ Exclusive Deals</p><p>✓ Priority Support</p><p>✓ Free Returns</p></div>
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white px-3 py-2 text-[10px] font-extrabold text-orange-600 sm:text-[11px]">Upgrade Now <ChevronRight size={13}/></span>
           </Link>
 
           <section className="min-w-0">
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="border-l-4 border-primary pl-3 text-xl font-black tracking-tight text-foreground sm:text-2xl">Popular Products</h2>
+              <h2 className="border-l-4 border-primary pl-2.5 text-lg font-black tracking-tight text-foreground sm:pl-3 sm:text-2xl">Popular Products</h2>
               <Link to="/categories" className="flex shrink-0 items-center gap-1 text-xs font-bold text-primary sm:text-sm">View All Products <ChevronRight size={15}/></Link>
             </div>
             {isLoading ? <ProductGridSkeleton count={5}/> : products.length === 0 ? (
               <EmptyState icon={PackageOpen} title="No products yet" description="Check back soon for new arrivals and amazing deals."/>
             ) : (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
                 {products.slice(0, 10).map((p: Product) => <ProductCard key={p.id} product={p}/>)}
               </div>
             )}
