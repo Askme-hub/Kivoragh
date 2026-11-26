@@ -10,7 +10,7 @@
 - [x] Seller hub & POS
 
 ## Handoff design merge
-- [ ] Homepage and product cards
-- [ ] Mobile navigation and menu
-- [ ] Account and order pages, preserving live features
-- [ ] Check phone, desktop and dark appearance
+- [x] Homepage and product cards — integrated in the friend UI merge; browser QA pending
+- [x] Mobile navigation and menu — integrated in the friend UI merge; browser QA pending
+- [x] Account and order pages, preserving live features — integrated; regression QA pending
+- [ ] Check phone, desktop and dark appearance — requires browser/device QA

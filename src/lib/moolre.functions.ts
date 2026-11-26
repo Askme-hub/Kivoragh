@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isMatchingMoolrePayment } from "./moolre-verification";
 
 const Channel = z.enum(["MTN", "TELECEL", "AT"]);
 const Payer = z.string().trim().min(9).max(16).regex(/^[0-9+\s]+$/);
@@ -69,7 +70,14 @@ export const startMoolrePayment = createServerFn({ method: "POST" })
       return { order_id: order.id, next: "paid" as const, message: "Your order is fully paid with Kivora Store Credit.", store_credit_applied: storeCreditApplied, amount_due: 0 };
     }
     const reference = `KV-${order.id.replace(/-/g, "").slice(0, 12)}-${Date.now()}`;
-    await supabaseAdmin.from("orders").update({ payment_reference: reference, payment_method: "online" } as any).eq("id", order.id);
+    const { error: referenceError } = await supabaseAdmin.from("orders")
+      .update({ payment_reference: reference, payment_method: "online" } as any)
+      .eq("id", order.id)
+      .eq("payment_status", "pending");
+    if (referenceError) {
+      await supabaseAdmin.from("orders").delete().eq("id", order.id).eq("payment_status", "pending");
+      throw new Error("Could not securely prepare this payment. Please try again.");
+    }
     let r: { next: "otp" | "prompt" | "error"; message?: string };
     try {
       r = await moolreCollect({ channel: data.channel, payer: data.payer, amount: amountDue, externalref: reference });
@@ -79,7 +87,11 @@ export const startMoolrePayment = createServerFn({ method: "POST" })
       return { order_id: order.id, next: "prompt" as const, message: "We're checking your payment request. Please wait for confirmation before trying again." };
     }
     if (r.next === "error") {
-      await supabaseAdmin.from("orders").update({ payment_status: "failed" }).eq("id", order.id);
+      const { error: failError } = await supabaseAdmin.from("orders")
+        .update({ payment_status: "failed" })
+        .eq("id", order.id)
+        .eq("payment_status", "pending");
+      if (failError) throw new Error("The payment provider rejected the request, but the order status could not be updated. Please contact support.");
       return { order_id: order.id, next: "error" as const, message: r.message ?? "The payment request could not be started." };
     }
     return { order_id: order.id, next: r.next, message: r.message, store_credit_applied: storeCreditApplied, amount_due: amountDue };
@@ -112,14 +124,40 @@ export const checkMoolrePayment = createServerFn({ method: "POST" })
     if (order.payment_status === "failed") return { status: "failed" as const, reason: "This payment request was not completed. Return to checkout to start a new payment." };
     const { moolreStatus } = await import("./moolre.server");
     const s = await moolreStatus(order.payment_reference!);
+
+    // A successful provider status is not enough: bind it to this order's
+    // stored reference and the exact amount charged after store credit.
+    if (s.txstatus !== 0 && s.externalref !== order.payment_reference) {
+      console.error("Moolre polling reference mismatch", {
+        orderId: order.id,
+        expectedRef: order.payment_reference,
+        returnedRef: s.externalref,
+      });
+      throw new Error("We couldn't verify this payment yet. Please contact support before retrying.");
+    }
+
     if (s.txstatus === 1) {
+      const amountDue = Number(order.total) - Number(order.store_credit_applied ?? 0);
+      if (!isMatchingMoolrePayment(s, { reference: order.payment_reference!, amountGhs: amountDue })) {
+        console.error("Moolre polling payment mismatch", {
+          orderId: order.id,
+          expectedAmount: amountDue,
+          paidAmount: s.amount,
+          returnedRef: s.externalref,
+        });
+        throw new Error("We couldn't verify this payment yet. Please contact support before retrying.");
+      }
       const { finalizePaidOrder } = await import("./paid-order.server");
       await finalizePaidOrder(order.id, Number(order.total));
       return { status: "paid" as const };
     }
     if (s.txstatus === 2) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      await supabaseAdmin.from("orders").update({ payment_status: "failed" }).eq("id", order.id).neq("payment_status", "paid");
+      const { error } = await supabaseAdmin.from("orders")
+        .update({ payment_status: "failed" })
+        .eq("id", order.id)
+        .eq("payment_status", "pending");
+      if (error) throw new Error("Could not record the failed payment status: " + error.message);
       return { status: "failed" as const, reason: s.reason ?? "Payment was declined or cancelled." };
     }
     return { status: "pending" as const };
