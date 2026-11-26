@@ -22,7 +22,24 @@ export const Route = createFileRoute("/api/public/moolre-webhook")({
         if (ref.startsWith("SUB-")) {
           const { parseSubscriptionRef, activateSubscription } = await import("@/lib/subscription-activate.server");
           const parsed = parseSubscriptionRef(ref);
-          if (parsed && (await moolreStatus(ref)).txstatus === 1) await activateSubscription(parsed.userId, parsed.plan, ref);
+          if (!parsed) return new Response("ok");
+          const s = await moolreStatus(ref);
+          if (s.txstatus !== 0 && s.externalref !== ref) {
+            console.error("Moolre subscription reference mismatch", { expectedRef: ref, returnedRef: s.externalref });
+            return new Response("Subscription reference mismatch", { status: 409 });
+          }
+          if (s.txstatus === 1) {
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            const { data: planRow, error: planError } = await supabaseAdmin
+              .from("subscription_plans").select("price").eq("id", parsed.plan).maybeSingle();
+            if (planError || !planRow) throw new Error("Could not load subscription price for Moolre verification.");
+            const { isMatchingMoolrePayment } = await import("@/lib/moolre-verification");
+            if (!isMatchingMoolrePayment(s, { reference: ref, amountGhs: Number(planRow.price) })) {
+              console.error("Moolre subscription payment mismatch", { expectedRef: ref, expectedAmount: Number(planRow.price), paidAmount: s.amount });
+              return new Response("Subscription payment details mismatch", { status: 409 });
+            }
+            await activateSubscription(parsed.userId, parsed.plan, ref);
+          }
           return new Response("ok");
         }
 
