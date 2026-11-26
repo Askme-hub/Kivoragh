@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isMatchingMoolrePayment } from "./moolre-verification";
 
 
 export const initiateSubscriptionCheckout = createServerFn({ method: "POST" })
@@ -97,7 +98,20 @@ export const checkSubscriptionMomo = createServerFn({ method: "POST" })
     if (!parsed || parsed.userId !== context.userId) throw new Error("Subscription mismatch");
     const { moolreStatus } = await import("./moolre.server");
     const s = await moolreStatus(data.reference);
-    if (s.txstatus === 1) { await activateSubscription(parsed.userId, parsed.plan, data.reference); return { status: "paid" as const }; }
+    if (s.txstatus !== 0 && s.externalref !== data.reference) {
+      throw new Error("We couldn't verify this subscription payment yet. Please contact support before retrying.");
+    }
+    if (s.txstatus === 1) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: planRow, error: planError } = await supabaseAdmin
+        .from("subscription_plans").select("price").eq("id", parsed.plan).maybeSingle();
+      if (planError || !planRow) throw new Error("Could not verify the subscription price.");
+      if (!isMatchingMoolrePayment(s, { reference: data.reference, amountGhs: Number(planRow.price) })) {
+        throw new Error("We couldn't verify this subscription payment yet. Please contact support before retrying.");
+      }
+      await activateSubscription(parsed.userId, parsed.plan, data.reference);
+      return { status: "paid" as const };
+    }
     if (s.txstatus === 2) return { status: "failed" as const, reason: s.reason ?? "Payment was declined or cancelled." };
     return { status: "pending" as const };
   });
