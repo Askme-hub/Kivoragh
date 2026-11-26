@@ -13,6 +13,7 @@ import { InstallAppButton } from "@/components/InstallAppButton";
 
 import { useProducts, toProduct, type DbProduct } from "@/lib/products";
 import { useCategories } from "@/lib/categories";
+import { useBanners } from "@/lib/banners";
 import { useActiveFlashSale, flashPriceMap } from "@/lib/flash-sales";
 import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/lib/store";
@@ -156,31 +157,89 @@ function Home() {
 
   return (
     <div className="marketplace-products min-h-screen min-w-0 bg-background pb-10">
-      <section className="bg-marketplace-band text-marketplace-band-foreground">
-        <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 md:px-8 md:py-7">
-          <div className="min-w-0">
-            <p className="mb-1 text-[10px] font-bold uppercase text-teal">Your Ghanaian marketplace</p>
-            <h1 className="font-display text-3xl font-extrabold leading-tight md:text-4xl">Kivora Ghana<span className="text-primary">.</span></h1>
-            <p className="mt-1 text-xs text-marketplace-band-foreground/70 md:text-sm">Everyday essentials. Standout finds. Local sellers.</p>
-          </div>
-          <Button asChild size="sm" className="rounded-full"><Link to="/categories">Shop now <ArrowUpRight /></Link></Button>
-        </div>
-        <div className="flex items-center justify-between gap-2 border-t border-marketplace-band-foreground/15 px-5 py-2 text-[10px] font-semibold text-marketplace-band-foreground/75 md:px-8 md:text-xs">
-          <span className="flex items-center gap-1.5"><Truck size={14} className="text-teal" /> All 16 regions</span>
-          <span className="flex items-center gap-1.5"><ShieldCheck size={14} className="text-teal" /> Secure checkout</span>
-          <span>Prices in GH₵</span>
-        </div>
-      </section>
-      <section className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
-        <div className="min-w-0"><BannerSlider /></div>
-        <aside className="hidden flex-col justify-center gap-6 border-l border-border px-5 lg:flex">
-          <Link to="/seller" className="group text-foreground"><Store className="mb-3 text-primary" size={26} /><span className="block text-base font-extrabold">Grow with Kivora</span><span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">Become a seller <ArrowUpRight size={14} /></span></Link>
-          <Link to="/help" className="border-t border-border pt-5 text-foreground"><Headphones className="mb-3 text-primary" size={26} /><span className="block text-base font-extrabold">Need a hand?</span><span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">Help & support <ArrowUpRight size={14} /></span></Link>
-        </aside>
-      </section>
+      {/* REFERENCE-MATCHED DESKTOP MARKETPLACE HOMEPAGE */}
+      <div className="mx-auto w-full max-w-[1440px] px-3 pt-3 md:px-4 lg:px-6">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[232px_minmax(0,1fr)]">
+          <aside className="hidden overflow-hidden rounded-2xl border border-border/70 bg-card shadow-soft lg:block">
+            <Link to="/categories" className="flex items-center justify-between bg-primary px-4 py-3 text-sm font-extrabold text-primary-foreground">
+              <span className="flex items-center gap-2"><span className="text-lg">☰</span> All Categories</span>
+              <ChevronRight size={16} />
+            </Link>
+            <div className="p-2">
+              {categories.slice(0, 8).map((category) => (
+                <Link key={category.id} to="/categories" search={{ c: category.name }} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-foreground transition hover:bg-primary-soft hover:text-primary">
+                  {category.image_url ? <img src={category.image_url} alt="" className="h-6 w-6 rounded-md object-cover" /> : <span className="h-6 w-6 rounded-md bg-primary/10" />}
+                  <span className="min-w-0 flex-1 truncate">{category.name}</span>
+                </Link>
+              ))}
+              <Link to="/categories" className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-bold text-primary hover:bg-primary-soft">
+                <span className="grid h-6 w-6 place-items-center rounded-md bg-primary/10">▦</span>
+                More Categories
+                <ChevronRight size={14} className="ml-auto" />
+              </Link>
+            </div>
+          </aside>
 
-      <div className="px-4 mt-4">
-        <InstallAppButton />
+          <div className="min-w-0">
+            <nav aria-label="Store navigation" className="mb-2 hidden items-center gap-7 px-3 text-[13px] font-bold text-foreground md:flex">
+              <Link to="/" className="flex items-center gap-1.5 text-primary"><span>⌂</span> Home</Link>
+              <Link to="/categories" className="hover:text-primary">Categories⌄</Link>
+              <Link to="/categories" className="hover:text-primary">Deals</Link>
+              <a href="#flash-sales" className="flex items-center gap-1 hover:text-primary"><Zap size={14} /> Flash Sale</a>
+              <Link to="/help" className="hover:text-primary">About</Link>
+              <Link to="/help" className="hover:text-primary">Blog</Link>
+              <Link to="/help" className="hover:text-primary">Contact</Link>
+            </nav>
+            <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 via-primary to-amber-400 shadow-elevated">
+              <BannerSlider />
+              <div className="relative flex min-h-[220px] flex-col justify-center px-6 py-8 text-white sm:min-h-[260px] sm:px-10 lg:min-h-[265px]">
+                <div className="max-w-[580px]">
+                  <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-white/85">Shop smarter. Live better.</p>
+                  <h1 className="font-display text-4xl font-black leading-[0.98] tracking-tight sm:text-5xl lg:text-6xl">Welcome to<br/><span className="text-white">Kivora!</span></h1>
+                  <p className="mt-3 max-w-md text-sm font-semibold text-white/95 sm:text-base">Shop the best products at unbeatable prices. Fast delivery. Secure payments.</p>
+                  <Link to="/categories" className="mt-5 inline-flex items-center gap-2 rounded-full bg-black px-6 py-3 text-sm font-extrabold text-white shadow-lg transition hover:scale-[1.02]">Start Shopping <ChevronRight size={16}/></Link>
+                </div>
+                <div className="pointer-events-none absolute bottom-4 right-5 hidden rotate-[-5deg] rounded-2xl border-2 border-white/50 bg-white/15 px-5 py-4 text-center text-xl font-black italic leading-tight text-white shadow-xl backdrop-blur-sm sm:block">Shop<br/>Smarter,<br/><span className="text-amber-100">Live Better</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-orange-50 px-3 py-4 dark:bg-orange-950/20 sm:grid-cols-4 sm:gap-3 sm:px-5">
+          {[
+            { icon: Truck, title: "Fast & Reliable Delivery", detail: "Across Ghana" },
+            { icon: ShieldCheck, title: "Secure Payments", detail: "MoMo, Card & More" },
+            { icon: Headphones, title: "24/7 Customer Support", detail: "We're always here" },
+            { icon: BadgeCheck, title: "Easy Returns", detail: "Shop with confidence" },
+          ].map(({icon: Icon,title,detail}) => (
+            <div key={title} className="flex items-center gap-2.5 border-border/70 px-1 sm:gap-3 sm:border-r last:border-0 sm:px-3">
+              <Icon size={27} className="shrink-0 text-primary sm:h-8 sm:w-8"/>
+              <div className="min-w-0"><p className="text-[11px] font-extrabold text-foreground sm:text-xs">{title}</p><p className="mt-0.5 text-[10px] text-muted-foreground sm:text-xs">{detail}</p></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[172px_minmax(0,1fr)] lg:grid-cols-[190px_minmax(0,1fr)]">
+          <Link to="/account" className="brand-band flex min-h-[170px] flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 via-primary to-amber-500 p-4 text-white shadow-elevated transition hover:-translate-y-0.5">
+            <div><div className="text-3xl">👑</div><p className="mt-1 text-xl font-black">Kivora Plus</p><p className="text-xs font-semibold text-white/90">Enjoy more benefits!</p></div>
+            <div className="space-y-1.5 text-[11px] font-bold"><p>✓ Exclusive Deals</p><p>✓ Priority Support</p><p>✓ Free Returns</p></div>
+            <span className="inline-flex w-fit items-center gap-1 rounded-full bg-white px-3 py-2 text-[11px] font-extrabold text-orange-600">Upgrade Now <ChevronRight size={13}/></span>
+          </Link>
+
+          <section className="min-w-0">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="border-l-4 border-primary pl-3 text-xl font-black tracking-tight text-foreground sm:text-2xl">Popular Products</h2>
+              <Link to="/categories" className="flex shrink-0 items-center gap-1 text-xs font-bold text-primary sm:text-sm">View All Products <ChevronRight size={15}/></Link>
+            </div>
+            {isLoading ? <ProductGridSkeleton count={5}/> : products.length === 0 ? (
+              <EmptyState icon={PackageOpen} title="No products yet" description="Check back soon for new arrivals and amazing deals."/>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                {products.slice(0, 10).map((p: Product) => <ProductCard key={p.id} product={p}/>)}
+              </div>
+            )}
+          </section>
+        </div>
       </div>
 
       {/* FOOD & GROCERIES ENTRY */}
