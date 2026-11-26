@@ -135,6 +135,7 @@ function Home() {
   const site = useSiteContent();
   const { data: products = [], isLoading } = useProducts();
   const { data: categories = [] } = useCategories();
+  const { data: activeBanners = [] } = useBanners(true);
   const { data: grouped } = useGroupedProducts();
   const { data: flashSale } = useActiveFlashSale();
 
@@ -191,16 +192,17 @@ function Home() {
               <Link to="/help" className="hover:text-primary">Contact</Link>
             </nav>
             <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 via-primary to-amber-400 shadow-elevated">
-              <BannerSlider />
-              <div className="relative flex min-h-[220px] flex-col justify-center px-6 py-8 text-white sm:min-h-[260px] sm:px-10 lg:min-h-[265px]">
-                <div className="max-w-[580px]">
-                  <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-white/85">Shop smarter. Live better.</p>
-                  <h1 className="font-display text-4xl font-black leading-[0.98] tracking-tight sm:text-5xl lg:text-6xl">Welcome to<br/><span className="text-white">Kivora!</span></h1>
-                  <p className="mt-3 max-w-md text-sm font-semibold text-white/95 sm:text-base">Shop the best products at unbeatable prices. Fast delivery. Secure payments.</p>
-                  <Link to="/categories" className="mt-5 inline-flex items-center gap-2 rounded-full bg-black px-6 py-3 text-sm font-extrabold text-white shadow-lg transition hover:scale-[1.02]">Start Shopping <ChevronRight size={16}/></Link>
+              {activeBanners.length > 0 ? <BannerSlider /> : (
+                <div className="relative flex min-h-[220px] flex-col justify-center px-6 py-8 text-white sm:min-h-[260px] sm:px-10 lg:min-h-[300px]">
+                  <div className="max-w-[580px]">
+                    <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-white/85">Shop smarter. Live better.</p>
+                    <h1 className="font-display text-4xl font-black leading-[0.98] tracking-tight sm:text-5xl lg:text-6xl">Welcome to<br/><span className="text-white">Kivora!</span></h1>
+                    <p className="mt-3 max-w-md text-sm font-semibold text-white/95 sm:text-base">Shop the best products at unbeatable prices. Fast delivery. Secure payments.</p>
+                    <Link to="/categories" className="mt-5 inline-flex items-center gap-2 rounded-full bg-black px-6 py-3 text-sm font-extrabold text-white shadow-lg transition hover:scale-[1.02]">Start Shopping <ChevronRight size={16}/></Link>
+                  </div>
+                  <div className="pointer-events-none absolute bottom-4 right-5 hidden rotate-[-5deg] rounded-2xl border-2 border-white/50 bg-white/15 px-5 py-4 text-center text-xl font-black italic leading-tight text-white shadow-xl backdrop-blur-sm sm:block">Shop<br/>Smarter,<br/><span className="text-amber-100">Live Better</span></div>
                 </div>
-                <div className="pointer-events-none absolute bottom-4 right-5 hidden rotate-[-5deg] rounded-2xl border-2 border-white/50 bg-white/15 px-5 py-4 text-center text-xl font-black italic leading-tight text-white shadow-xl backdrop-blur-sm sm:block">Shop<br/>Smarter,<br/><span className="text-amber-100">Live Better</span></div>
-              </div>
+              )}
             </div>
           </div>
         </div>
