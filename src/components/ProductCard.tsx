@@ -68,7 +68,7 @@ export function ProductCard({ product }: { product: Product }) {
             {oldPrice && <p className="mt-1 truncate text-[9px] font-medium text-muted-foreground line-through sm:text-[10px]">{formatGHC(oldPrice)}</p>}
           </div>
           {qty === 0 ? (
-            <Button variant="ghost" size="icon" disabled={outOfStock} data-add-cart onClick={add} aria-label={`Add ${product.name} to cart`} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition hover:brightness-105 active:scale-90 disabled:cursor-not-allowed disabled:opacity-40 sm:h-9 sm:w-9"><ShoppingCart size={15} strokeWidth={2.5} /></Button>
+            <Button variant="ghost" size="icon" disabled={outOfStock} data-add-cart onClick={add} aria-label={`Add ${product.name} to cart`} className="flex h-8 w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-primary px-2 text-primary-foreground shadow-sm transition hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 sm:h-9 sm:w-9 sm:rounded-xl sm:px-0"><ShoppingCart size={14} strokeWidth={2.5} /><span className="text-[10px] font-bold sm:hidden">Add to Cart</span></Button>
           ) : (
             <div className="flex shrink-0 items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
               <Button variant="ghost" size="icon" onClick={() => updateQty(product.id, qty - 1)} aria-label="Decrease quantity" className="flex h-8 w-7 items-center justify-center rounded-none p-0 hover:bg-primary/80 hover:text-primary-foreground"><Minus size={12} /></Button>
