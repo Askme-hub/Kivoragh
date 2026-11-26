@@ -39,10 +39,10 @@ export function ProductCard({ product }: { product: Product }) {
   };
 
   return (
-    <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border/70 bg-card text-card-foreground shadow-soft transition duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-elevated">
+    <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground transition-colors hover:border-primary/40">
       <div className="relative p-1.5 sm:p-2">
-        <Link to="/products/$id" params={{ id: product.id }} className="relative block aspect-square overflow-hidden rounded-md bg-product-backdrop" aria-label={`View ${product.name}`}>
-          <img src={product.image} alt={product.name} loading="lazy" decoding="async" className={`h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-110 sm:p-4 ${outOfStock ? "opacity-40 grayscale" : ""}`} />
+        <Link to="/products/$id" params={{ id: product.id }} className="relative block aspect-square overflow-hidden rounded-lg bg-product-backdrop" aria-label={`View ${product.name}`}>
+          <img src={product.image} alt={product.name} loading="lazy" decoding="async" className={`h-full w-full object-contain p-3 sm:p-4 ${outOfStock ? "opacity-40 grayscale" : ""}`} />
           <span className="pointer-events-none absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-card/90 text-foreground opacity-0 shadow-sm transition group-hover:opacity-100" aria-hidden="true"><ArrowUpRight size={14} /></span>
         </Link>
 
@@ -54,8 +54,8 @@ export function ProductCard({ product }: { product: Product }) {
         {lowStock && <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-md bg-warning-soft px-2 py-1 text-[9px] font-extrabold text-warning-ink sm:bottom-3.5 sm:left-3.5"><Flame size={10} fill="currentColor" /> LOW STOCK</span>}
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 px-2.5 pb-2.5 pt-1 sm:px-3 sm:pb-3">
-        <Link to="/products/$id" params={{ id: product.id }} className="line-clamp-3 min-h-[3.35rem] break-words text-[13px] font-extrabold leading-[1.12rem] text-foreground transition-colors hover:text-primary sm:line-clamp-2 sm:min-h-[2.45rem] sm:text-[13px] sm:font-bold sm:leading-[1.25rem]">{product.name}</Link>
+      <div className="flex flex-1 flex-col gap-2.5 px-3 pb-3 pt-1.5 sm:px-3.5 sm:pb-3.5">
+        <Link to="/products/$id" params={{ id: product.id }} className="line-clamp-3 min-h-[3.75rem] break-words text-sm font-bold leading-5 text-foreground hover:text-primary sm:min-h-[3.25rem] sm:text-sm sm:leading-[1.35rem]">{product.name}</Link>
 
         <div className="flex min-h-5 flex-wrap items-center gap-x-2 gap-y-1">
           <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-success-ink sm:text-[10px]"><Truck size={12} /> Pay on delivery</span>
