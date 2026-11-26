@@ -764,6 +764,77 @@ export type Database = {
           },
         ]
       }
+      moolre_payout_attempts: {
+        Row: {
+          amount: number
+          channel: string
+          completed_at: string | null
+          created_at: string
+          currency: string
+          expected_name: string
+          externalref: string
+          id: string
+          moolre_code: string | null
+          moolre_message: string | null
+          moolre_transaction_id: string | null
+          receiver: string
+          seller_id: string
+          status: string
+          txstatus: number | null
+          updated_at: string
+          validated_name: string | null
+          withdrawal_id: string
+        }
+        Insert: {
+          amount: number
+          channel: string
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          expected_name: string
+          externalref: string
+          id?: string
+          moolre_code?: string | null
+          moolre_message?: string | null
+          moolre_transaction_id?: string | null
+          receiver: string
+          seller_id: string
+          status?: string
+          txstatus?: number | null
+          updated_at?: string
+          validated_name?: string | null
+          withdrawal_id: string
+        }
+        Update: {
+          amount?: number
+          channel?: string
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          expected_name?: string
+          externalref?: string
+          id?: string
+          moolre_code?: string | null
+          moolre_message?: string | null
+          moolre_transaction_id?: string | null
+          receiver?: string
+          seller_id?: string
+          status?: string
+          txstatus?: number | null
+          updated_at?: string
+          validated_name?: string | null
+          withdrawal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moolre_payout_attempts_withdrawal_id_fkey"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1801,6 +1872,10 @@ export type Database = {
           created_at: string
           id: string
           method: string
+          payout_last_error: string | null
+          payout_provider: string | null
+          payout_status: string
+          payout_updated_at: string | null
           seller_id: string
           status: string
           updated_at: string
@@ -1812,6 +1887,10 @@ export type Database = {
           created_at?: string
           id?: string
           method: string
+          payout_last_error?: string | null
+          payout_provider?: string | null
+          payout_status?: string
+          payout_updated_at?: string | null
           seller_id: string
           status?: string
           updated_at?: string
@@ -1823,6 +1902,10 @@ export type Database = {
           created_at?: string
           id?: string
           method?: string
+          payout_last_error?: string | null
+          payout_provider?: string | null
+          payout_status?: string
+          payout_updated_at?: string | null
           seller_id?: string
           status?: string
           updated_at?: string
@@ -1847,6 +1930,10 @@ export type Database = {
         }[]
       }
       buyer_cancel_order: { Args: { _order_id: string }; Returns: string }
+      cancel_unsubmitted_moolre_withdrawal: {
+        Args: { _admin_note?: string; _withdrawal_id: string }
+        Returns: boolean
+      }
       claim_referral_code: {
         Args: { _code: string; _source?: string }
         Returns: {
@@ -1866,6 +1953,25 @@ export type Database = {
       confirm_order_received: {
         Args: { _order_id: string }
         Returns: undefined
+      }
+      create_seller_withdrawal: {
+        Args: {
+          _amount: number
+          _payout_account_id: string
+          _seller_id: string
+        }
+        Returns: string
+      }
+      finalize_moolre_seller_withdrawal: {
+        Args: {
+          _moolre_code?: string
+          _moolre_message?: string
+          _moolre_transaction_id?: string
+          _outcome: string
+          _txstatus?: number
+          _withdrawal_id: string
+        }
+        Returns: boolean
       }
       get_or_create_my_referral_code: {
         Args: never
