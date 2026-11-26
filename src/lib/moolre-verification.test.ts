@@ -13,6 +13,25 @@ describe("isMatchingMoolrePayment", () => {
     expect(isMatchingMoolrePayment({ ...validPayment, amount: "125.50" }, expected)).toBe(true);
   });
 
+  it("checks only the remaining MoMo debit when store credit covered part of the order", () => {
+    const orderTotal = 125.5;
+    const storeCreditApplied = 40;
+    const amountChargedToPhone = orderTotal - storeCreditApplied;
+
+    expect(
+      isMatchingMoolrePayment(
+        { txstatus: 1, externalref: expected.reference, amount: amountChargedToPhone },
+        { reference: expected.reference, amountGhs: amountChargedToPhone },
+      ),
+    ).toBe(true);
+    expect(
+      isMatchingMoolrePayment(
+        { txstatus: 1, externalref: expected.reference, amount: orderTotal },
+        { reference: expected.reference, amountGhs: amountChargedToPhone },
+      ),
+    ).toBe(false);
+  });
+
   it.each([
     { txstatus: 2 },
     { txstatus: 0 },
